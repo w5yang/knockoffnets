@@ -2,26 +2,14 @@
 """This is a short description.
 Replace this with a more detailed description of what this file contains.
 """
-import argparse
-import os.path as osp
-import os
 
 import numpy as np
 
 from tqdm import tqdm
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
 
-from knockoff import datasets
-import knockoff.utils.transforms as transform_utils
-import knockoff.utils.model as model_utils
-import knockoff.utils.utils as knockoff_utils
-from knockoff.victim.blackbox import Blackbox
-import knockoff.config as cfg
+import configs.config as cfg
 
 __author__ = "Tribhuvanesh Orekondy"
 __maintainer__ = "Tribhuvanesh Orekondy"

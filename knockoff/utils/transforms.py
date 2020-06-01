@@ -4,7 +4,7 @@ Replace this with a more detailed description of what this file contains.
 """
 from torchvision.transforms import transforms
 
-import knockoff.config as cfg
+import configs.config as cfg
 
 __author__ = "Tribhuvanesh Orekondy"
 __maintainer__ = "Tribhuvanesh Orekondy"

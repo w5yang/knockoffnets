@@ -1,14 +1,10 @@
-import sys
-import os
 import os.path as osp
 
 from torchvision.datasets import CIFAR10 as TVCIFAR10
 from torchvision.datasets import CIFAR100 as TVCIFAR100
 from torchvision.datasets import SVHN as TVSVHN
 
-import knockoff.config as cfg
-from torchvision.datasets.utils import check_integrity
-import pickle
+import configs.config as cfg
 
 
 class CIFAR10(TVCIFAR10):

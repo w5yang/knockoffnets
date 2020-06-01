@@ -5,7 +5,7 @@ from torchvision.datasets import EMNIST as TVEMNIST
 from torchvision.datasets import FashionMNIST as TVFashionMNIST
 from torchvision.datasets import KMNIST as TVKMNIST
 
-import knockoff.config as cfg
+import configs.config as cfg
 
 
 class MNIST(TVMNIST):

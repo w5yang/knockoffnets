@@ -7,25 +7,15 @@ import os.path as osp
 import os
 from datetime import datetime
 import json
-from collections import defaultdict as dd
-import knockoff.models.zoo as zoo
 
 import numpy as np
 
-from tqdm import tqdm
-
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils import data as torch_data
-from torch.utils.data import Dataset, DataLoader, Subset
+from torch.utils.data import Subset
 
-import knockoff.config as cfg
+import configs.config as cfg
 from knockoff import datasets
-import knockoff.utils.transforms as transform_utils
 import knockoff.utils.model as model_utils
-import knockoff.utils.utils as knockoff_utils
 import knockoff.models.zoo as zoo
 
 __author__ = "Tribhuvanesh Orekondy"

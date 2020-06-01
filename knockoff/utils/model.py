@@ -2,25 +2,20 @@
 """This is a short description.
 Replace this with a more detailed description of what this file contains.
 """
-import argparse
 import os.path as osp
-import os
 import time
 from datetime import datetime
 from collections import defaultdict as dd
 
 import numpy as np
 
-from tqdm import tqdm
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import torchvision.models as torch_models
 
-import knockoff.config as cfg
 import knockoff.utils.utils as knockoff_utils
 
 __author__ = "Tribhuvanesh Orekondy"

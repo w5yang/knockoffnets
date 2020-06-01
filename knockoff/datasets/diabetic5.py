@@ -2,24 +2,14 @@
 """This is a short description.
 Replace this with a more detailed description of what this file contains.
 """
-import argparse
 import os.path as osp
-import os
 from collections import defaultdict as dd
 
 import numpy as np
 
-from tqdm import tqdm
+from torchvision.datasets.folder import ImageFolder
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-
-from torchvision.datasets.folder import ImageFolder, default_loader
-
-import knockoff.config as cfg
+import configs.config as cfg
 
 __author__ = "Tribhuvanesh Orekondy"
 __maintainer__ = "Tribhuvanesh Orekondy"

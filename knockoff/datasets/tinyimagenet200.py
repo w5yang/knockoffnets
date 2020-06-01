@@ -5,7 +5,7 @@ Replace this with a more detailed description of what this file contains.
 import os.path as osp
 from torchvision.datasets import ImageFolder
 
-import knockoff.config as cfg
+import configs.config as cfg
 
 __author__ = "Tribhuvanesh Orekondy"
 __maintainer__ = "Tribhuvanesh Orekondy"

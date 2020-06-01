@@ -16,7 +16,7 @@ from torch.utils.data import Dataset
 from torch import optim
 from torchvision.datasets.folder import ImageFolder, IMG_EXTENSIONS, default_loader
 
-import knockoff.config as cfg
+import configs.config as cfg
 import knockoff.utils.model as model_utils
 from knockoff import datasets
 import knockoff.models.zoo as zoo

@@ -14,18 +14,11 @@ import numpy as np
 from tqdm import tqdm
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-import torchvision
 
 from knockoff import datasets
-import knockoff.utils.transforms as transform_utils
-import knockoff.utils.model as model_utils
 import knockoff.utils.utils as knockoff_utils
 from knockoff.victim.blackbox import Blackbox
-import knockoff.config as cfg
+import configs.config as cfg
 
 __author__ = "Tribhuvanesh Orekondy"
 __maintainer__ = "Tribhuvanesh Orekondy"

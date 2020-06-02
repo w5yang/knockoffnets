@@ -129,6 +129,7 @@ def main():
     active_adv = ActiveAdversary(**params)
     for i in params['iterations']:
         active_adv.step(params['budget-per-iter'])
+    active_adv.save_selected()
 
 
 if __name__ == '__main__':

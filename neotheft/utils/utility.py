@@ -73,7 +73,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     params = vars(args)
     device = device_dealer(**params)
     params['device'] = device
-    if option['blackbox']:
+    if option['black_box']:
         blackbox_dir = params['victim_model_dir']
         params['blackbox'] = Blackbox.from_modeldir(blackbox_dir, device)
     if option['active']:

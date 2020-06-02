@@ -21,27 +21,27 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         parser.add_argument('--queryset', metavar='TYPE', type=str, help='Adversary\'s dataset (P_A(X))', required=True)
 
     if option['active']:
-        parser.add_argument('--strategy', metavar='S', type=str, help='Active Method',
-                            choices=['kcenter', 'random', 'dfal'], required=True)
+        parser.add_argument('strategy', metavar='S', type=str, help='Active Sample Strategy',
+                            choices=['kcenter', 'random', 'dfal'])
         parser.add_argument('--metric', metavar="M", type=str, help='K-Center method distance metric',
                             choices=['euclidean', 'manhattan', 'l1', 'l2'], default='euclidean')
-        parser.add_argument('--sample-set', metavar='DS_NAME', type=str,
+        parser.add_argument('sampleset', metavar='DS_NAME', type=str,
                             help='Name of sample dataset in active learning selecting algorithms')
         parser.add_argument('--initial-size', metavar='N', type=int, help='Active Learning Initial Sample Size',
                             default=100)
         parser.add_argument('--budget-per-iter', metavar='N', type=int, help='budget for every iteration',
                             default=100)
-        parser.add_argument('iterations', metavar='N', type=int, help='iteration times',
+        parser.add_argument('--iterations', metavar='N', type=int, help='iteration times',
                             default=10)
     if option['synthetic']:
-        parser.add_argument('--synthetic-method', metavar='SM', type=str, help='Synthetic Method',
+        parser.add_argument('synthetic_method', metavar='SM', type=str, help='Synthetic Method',
                             choices=['fgsm', 'ifgsm'])
     if option['black_box']:
-        parser.add_argument('victim_model_dir', metavar='PATH', type=str,
+        parser.add_argument('victim_model_dir', metavar='VIC_DIR', type=str,
                             help='Path to victim model. Should contain files "model_best.pth.tar" and "params.json"')
         parser.add_argument('--argmaxed', action='store_true', help='Only consider argmax labels', default=False)
     if option['train']:
-        parser.add_argument('model_dir', metavar='DIR', type=str, help='Surrogate Model Destination directory')
+        parser.add_argument('model_dir', metavar='SUR_DIR', type=str, help='Surrogate Model Destination directory')
         parser.add_argument('model_arch', metavar='MODEL_ARCH', type=str, help='Model name')
         parser.add_argument('testdataset', metavar='DS_NAME', type=str, help='Name of test')
         # Optional arguments
@@ -77,7 +77,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         blackbox_dir = params['victim_model_dir']
         params['blackbox'] = Blackbox.from_modeldir(blackbox_dir, device)
     if option['active']:
-        sample_set_name = params['sample_set']
+        sample_set_name = params['sampleset']
         assert sample_set_name in datasets.__dict__.keys()
         modelfamily = datasets.dataset_to_modelfamily[sample_set_name]
         transform = datasets.modelfamily_to_transforms[modelfamily]['test']

@@ -2,7 +2,7 @@ import argparse
 from typing import Dict, Any
 import torch
 import os
-import neotheft.datasets as datasets
+import datasets
 
 from knockoff.victim.blackbox import Blackbox
 from neotheft.models import zoo

@@ -19,7 +19,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from knockoff.utils.type_checks import TypeCheck
 import knockoff.utils.model as model_utils
-import knockoff.models.zoo as zoo
+import models.zoo as zoo
 import datasets
 
 __author__ = "Tribhuvanesh Orekondy"

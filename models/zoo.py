@@ -2,23 +2,23 @@ import torch
 import torch.nn as nn
 import os.path as osp
 
-import knockoff.models.cifar
-import knockoff.models.mnist
-import knockoff.models.imagenet
+import models.cifar
+import models.mnist
+import models.imagenet
 
 
 def get_net(modelname, modeltype, pretrained=None, **kwargs):
-    assert modeltype in ('mnist', 'cifar', 'imagenet')
+    assert modeltype in ('mnist', 'cifar', 'imagenet', 'custom_cnn')
     if pretrained and pretrained is not None:
         return get_pretrainednet(modelname, modeltype, pretrained, **kwargs)
     else:
         try:
             # This should have ideally worked:
-            model = eval('knockoff.models.{}.{}'.format(modeltype, modelname))(**kwargs)
+            model = eval('models.{}.{}'.format(modeltype, modelname))(**kwargs)
         except AssertionError:
             # But, there's a bug in pretrained models which ignores the num_classes attribute.
             # So, temporarily load the model and replace the last linear layer
-            model = eval('knockoff.models.{}.{}'.format(modeltype, modelname))()
+            model = eval('models.{}.{}'.format(modeltype, modelname))()
             if 'num_classes' in kwargs:
                 num_classes = kwargs['num_classes']
                 in_feat = model.last_linear.in_features
@@ -30,7 +30,7 @@ def get_pretrainednet(modelname, modeltype, pretrained='imagenet', num_classes=1
     if pretrained == 'imagenet':
         return get_imagenet_pretrainednet(modelname, num_classes, **kwargs)
     elif osp.exists(pretrained):
-        model = eval('knockoff.models.{}.{}'.format(modeltype, modelname))(num_classes=num_classes, **kwargs)
+        model = eval('models.{}.{}'.format(modeltype, modelname))(num_classes=num_classes, **kwargs)
         checkpoint = torch.load(pretrained)
         pretrained_state_dict = checkpoint.get('state_dict', checkpoint)
         copy_weights_(pretrained_state_dict, model.state_dict())
@@ -40,9 +40,9 @@ def get_pretrainednet(modelname, modeltype, pretrained='imagenet', num_classes=1
 
 
 def get_imagenet_pretrainednet(modelname, num_classes=1000, **kwargs):
-    valid_models = knockoff.models.imagenet.__dict__.keys()
+    valid_models = models.imagenet.__dict__.keys()
     assert modelname in valid_models, 'Model not recognized, Supported models = {}'.format(valid_models)
-    model = knockoff.models.imagenet.__dict__[modelname](pretrained='imagenet')
+    model = models.imagenet.__dict__[modelname](pretrained='imagenet')
     if num_classes != 1000:
         # Replace last linear layer
         in_features = model.last_linear.in_features

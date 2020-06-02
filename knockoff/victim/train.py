@@ -16,7 +16,7 @@ from torch.utils.data import Subset
 import configs.config as cfg
 import datasets
 import knockoff.utils.model as model_utils
-import knockoff.models.zoo as zoo
+import models.zoo as zoo
 
 __author__ = "Tribhuvanesh Orekondy"
 __maintainer__ = "Tribhuvanesh Orekondy"

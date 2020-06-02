@@ -12,7 +12,7 @@ PROJECT_ROOT = dirname(SRC_ROOT)
 CACHE_ROOT = osp.join(SRC_ROOT, 'cache')
 DATASET_ROOT = osp.join(PROJECT_ROOT, 'data')
 DEBUG_ROOT = osp.join(PROJECT_ROOT, 'debug')
-MODEL_DIR = osp.join(PROJECT_ROOT, 'models')
+MODEL_DIR = osp.join(PROJECT_ROOT, 'results', 'models')
 
 # -------------- URLs
 ZOO_URL = 'http://datasets.d2.mpi-inf.mpg.de/blackboxchallenge'

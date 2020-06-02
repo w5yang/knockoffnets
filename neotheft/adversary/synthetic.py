@@ -16,8 +16,8 @@ from knockoff.victim.blackbox import Blackbox
 from neotheft.utils.synthetic_sample_crafter import IFGSM, IFGSMMod, AdversarialExampleCrafter
 import configs.config as cfg
 import knockoff.utils.model as model_utils
-from neotheft import datasets
-import neotheft.models.zoo as zoo
+import datasets
+import models.zoo as zoo
 from knockoff.adversary.train import TransferSetImagePaths, TransferSetImages, get_optimizer
 
 class SyntheticAdversary(object):

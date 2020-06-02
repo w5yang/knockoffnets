@@ -1,13 +1,15 @@
 from torchvision import transforms
 
-from knockoff.datasets.caltech256 import Caltech256
-from knockoff.datasets.cifarlike import CIFAR10, CIFAR100, SVHN
-from knockoff.datasets.cubs200 import CUBS200
-from knockoff.datasets.diabetic5 import Diabetic5
-from knockoff.datasets.imagenet1k import ImageNet1k
-from knockoff.datasets.indoor67 import Indoor67
-from knockoff.datasets.mnistlike import MNIST, KMNIST, EMNIST, EMNISTLetters, FashionMNIST
-from knockoff.datasets.tinyimagenet200 import TinyImageNet200
+from datasets.caltech256 import Caltech256
+from datasets.cifarlike import CIFAR10, CIFAR100, SVHN
+from datasets.cubs200 import CUBS200
+from datasets.diabetic5 import Diabetic5
+from datasets.imagenet1k import ImageNet1k
+from datasets.indoor67 import Indoor67
+from datasets.mnistlike import MNIST, KMNIST, EMNIST, EMNISTLetters, FashionMNIST
+from datasets.tinyimagenet200 import TinyImageNet200
+from datasets.gtsrb import GTSRB
+from datasets.imagenet64 import ImageNet64
 
 # Create a mapping of dataset -> dataset_type
 # This is helpful to determine which (a) family of model needs to be loaded e.g., imagenet and
@@ -32,6 +34,8 @@ dataset_to_modelfamily = {
     'Indoor67': 'imagenet',
     'Diabetic5': 'imagenet',
     'ImageNet1k': 'imagenet',
+    'GTSRB': 'custom_cnn',
+    'Imagenet64': 'custom_cnn'
 }
 
 # Transforms
@@ -76,6 +80,16 @@ modelfamily_to_transforms = {
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225]),
+        ])
+    },
+    'custom_cnn': {
+        'train': transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
+        ]),
+        'test': transforms.Compose([
+            transforms.Resize((32, 32)),
+            transforms.ToTensor(),
         ])
     }
 }

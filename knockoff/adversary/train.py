@@ -18,7 +18,7 @@ from torchvision.datasets.folder import ImageFolder, IMG_EXTENSIONS, default_loa
 
 import configs.config as cfg
 import knockoff.utils.model as model_utils
-from knockoff import datasets
+import datasets
 import knockoff.models.zoo as zoo
 
 __author__ = "Tribhuvanesh Orekondy"

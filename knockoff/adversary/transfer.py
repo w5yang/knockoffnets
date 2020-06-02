@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 import torch
 
-from knockoff import datasets
+import datasets
 import knockoff.utils.utils as knockoff_utils
 from knockoff.victim.blackbox import Blackbox
 import configs.config as cfg

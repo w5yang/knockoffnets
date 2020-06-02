@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import Subset
 
 import configs.config as cfg
-from knockoff import datasets
+import datasets
 import knockoff.utils.model as model_utils
 import knockoff.models.zoo as zoo
 

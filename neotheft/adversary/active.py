@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from neotheft.utils.utility import parser_dealer, device_dealer
+from neotheft.utils.utility import parser_dealer
 from tqdm import tqdm
 
 import configs.config as cfg

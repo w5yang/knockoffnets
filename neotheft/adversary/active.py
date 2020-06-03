@@ -78,7 +78,6 @@ class ActiveAdversary(object):
         init_queryset = self.query_dataset(initial_samples)
         self.train(init_queryset)
 
-
     def query_dataset(self, training_samples: List[Tensor], argmax: bool = False) -> List[Tuple[Tensor, Tensor]]:
         training_set = []
         idx_set = set(range(len(training_samples)))
@@ -98,7 +97,8 @@ class ActiveAdversary(object):
         return training_set
 
     def train(self, training_set: List[Tuple[Tensor, Tensor]]):
-        model_utils.train_model(self.surrogate, training_set, self.path, batch_size=self.batch_size, testset=self.evaluation_set, criterion_train=self.criterion,
+        model_utils.train_model(self.surrogate, training_set, self.path, batch_size=self.batch_size,
+                                testset=self.evaluation_set, criterion_train=self.criterion,
                                 checkpoint_suffix='.{}.iter'.format(self.iterations), device=self.device,
                                 optimizer=self.optim, **self.kwargs)
         self.iterations += 1

@@ -78,9 +78,6 @@ class SubsetSelectionStrategy:
         self.selecting.update(index_list)
         self.unselected.difference_update(index_list)
 
-    def get_batch(self, batch: List[int]) -> Tensor:
-        return torch.stack([self.dataset[i][0] for i in batch])
-
     def get_selecting_tensor(self) -> List[Tensor]:
         return [self.dataset[i][0] for i in self.selecting]
 
@@ -177,7 +174,9 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
 
     def get_subset(self, size: int) -> List[Tensor]:
         self.merge_selection()
-        indexes, centers = self.get_selected()
+        center_indexes, _ = self.get_selected()
+        query_result = self.query_all()
+        centers = [query_result[i] for i in center_indexes]
         for _ in range(size):
             min_distances = []
             min_indexes = []
@@ -186,12 +185,12 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
             for batch_index, batch_initial in enumerate(range(0, unselected_size, self.batch_size)):
                 torch_centers = torch.stack(centers)
                 current_batch_indexes = unselected_indexes[batch_initial:batch_initial + self.batch_size]
-                current_batch = self.get_batch(current_batch_indexes)
+                current_batch = torch.stack([query_result[i] for i in current_batch_indexes])
                 min_dist, min_index = self.k_center(current_batch, torch_centers)
                 min_distances.append(min_dist)
                 min_indexes.append(unselected_indexes[batch_initial + min_index])
             selecting_i = min_indexes[int(np.argmax(min_distances))]
-            centers.append(self.dataset[selecting_i][0])
+            centers.append(query_result[selecting_i])
             self.select([selecting_i])
 
         return self.get_selecting_tensor()
@@ -202,7 +201,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         if self.metric == 'euclidean' or self.metric == 'l2':
             A_sq = torch.sum(torch.pow(A, 2), 1).reshape([-1, 1])
             B_sq = torch.sum(torch.pow(B, 2), 1).reshape([1, -1])
-            dist = torch.sqrt(torch.max(A_sq - 2 * torch.mul(A, B) + B_sq, torch.tensor(0.0).to(self.device)))
+            dist = torch.sqrt(torch.max(A_sq - 2 * torch.matmul(A, B.T) + B_sq, torch.tensor(0.0).to(self.device)))
         elif self.metric == 'manhattan' or self.metric == 'l1':
             raise NotImplementedError
         else:

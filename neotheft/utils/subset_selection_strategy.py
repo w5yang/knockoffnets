@@ -14,7 +14,8 @@ class SubsetSelectionStrategy:
     This is abstract class of Active Learning Approaches.
     """
 
-    def __init__(self, dataset: Dataset, model: Module, seed: int = 1337, batch_size: int = 50) -> None:
+    def __init__(self, dataset: Dataset, model: Module, seed: int = 1337, batch_size: int = 50,
+                 device: torch.device = torch.device('cpu')) -> None:
         """ Initial algorithm.
 
         :param dataset: target dataset
@@ -33,6 +34,7 @@ class SubsetSelectionStrategy:
         self.unselected = set([i for i in range(self.size)])
         self.selecting = set()
         self.batch_size = batch_size
+        self.device = device
 
     def shuffle(self) -> None:
         """ shuffle index
@@ -92,11 +94,12 @@ class SubsetSelectionStrategy:
     def query_all(self) -> List[Tensor]:
         loader = DataLoader(self.dataset, self.batch_size, shuffle=False)
         results = []
-        for index, x_batch, y_batch in enumerate(loader):
-            result = self.model(x_batch)
+        for index, (x_batch, y_batch) in enumerate(loader):
+            with torch.no_grad():
+                result = self.model(x_batch.to(self.device)).cpu()
             results.extend([
                 result[i]
-                for i in range(index * self.batch_size, index * self.batch_size + result.shape[0])
+                for i in range(result.shape[0])
             ])
 
         return results
@@ -115,7 +118,9 @@ class RandomSelectionStrategy(SubsetSelectionStrategy):
     For every get_subset operation, select random samples for `size`
     and set a selected records.
     """
-    def __init__(self, dataset: Dataset, model: Module, initial_size: int = 1000, seed: int = 1337, batch_size: int = 50) -> None:
+
+    def __init__(self, dataset: Dataset, model: Module, initial_size: int = 1000, seed: int = 1337,
+                 batch_size: int = 50) -> None:
         """ Initial algorithm.
 
         :param dataset: target dataset
@@ -144,6 +149,7 @@ class RandomSelectionStrategy(SubsetSelectionStrategy):
 class KCenterGreedyApproach(SubsetSelectionStrategy):
     """ K-Center Greedy Approach
     """
+
     def __init__(self,
                  dataset: Dataset,
                  model: Module,
@@ -164,8 +170,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         """
         assert metric in ('euclidean', 'manhattan', 'l1', 'l2')
         self.metric = metric
-        self.device = device
-        super(KCenterGreedyApproach, self).__init__(dataset, model, seed, batch_size)
+        super(KCenterGreedyApproach, self).__init__(dataset, model, seed, batch_size, device)
         unselected_list = list(self.unselected)
         np.random.set_state(self.state)
         initial_selection = np.random.choice(unselected_list, initial_size, False)

@@ -77,6 +77,7 @@ class ActiveAdversary(object):
         self.iterations = 0
         init_queryset = self.query_dataset(initial_samples)
         self.train(init_queryset)
+        self.total_train = init_queryset
 
     def query_dataset(self, training_samples: List[Tensor], argmax: bool = False) -> List[Tuple[Tensor, Tensor]]:
         training_set = []
@@ -114,7 +115,8 @@ class ActiveAdversary(object):
     def step(self, size: int):
         samples = self.sss.get_subset(size)
         sample_ds = self.query_dataset(samples)
-        self.train(sample_ds)
+        self.total_train.extend(sample_ds)
+        self.train(self.total_train)
 
 
 def main():

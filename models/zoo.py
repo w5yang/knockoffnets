@@ -5,7 +5,7 @@ import os.path as osp
 import models.cifar
 import models.mnist
 import models.imagenet
-
+import models.custom_cnn
 
 def get_net(modelname, modeltype, pretrained=None, **kwargs):
     assert modeltype in ('mnist', 'cifar', 'imagenet', 'custom_cnn')

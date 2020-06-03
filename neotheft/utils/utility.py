@@ -5,7 +5,7 @@ import os
 import datasets
 
 from knockoff.victim.blackbox import Blackbox
-from neotheft.models import zoo
+from models import zoo
 
 
 def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
@@ -89,7 +89,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         transform = datasets.modelfamily_to_transforms[modelfamily]['test']
         testset = datasets.__dict__[testset_name](train=False, transform=transform)
         params['testset'] = testset
-        num_classes = testset.classes
+        num_classes = len(testset.classes)
         pretrained_path = params['pretrained']
         model_arch = params['model_arch']
 

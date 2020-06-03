@@ -26,7 +26,7 @@ class ActiveAdversary(object):
                  surrogate: Module,
                  queryset: Dataset,
                  testset: Dataset,
-                 out_dir: str,
+                 model_dir: str,
                  batch_size: int = 50,
                  num_workers: int = 15,
                  strategy: str = 'random',
@@ -40,9 +40,10 @@ class ActiveAdversary(object):
         self.blackbox = blackbox
         self.surrogate = surrogate
         self.queryset = queryset
-        self.path = out_dir
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+        self.path = model_dir
+        self.kwargs = kwargs
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
         self.batch_size = batch_size
         self.num_worker = num_workers
         self.selected_index = set()
@@ -71,19 +72,20 @@ class ActiveAdversary(object):
         self.optim = get_optimizer(self.surrogate.parameters(), optimizer_choice, **kwargs)
         self.criterion = model_utils.soft_cross_entropy
         self.evaluation_set = self.query_dataset([sample[0] for sample in testset], argmax=True)
+
         initial_samples = self.sss.get_selecting_tensor()
         self.iterations = 0
         init_queryset = self.query_dataset(initial_samples)
         self.train(init_queryset)
-        self.kwargs = kwargs
+
 
     def query_dataset(self, training_samples: List[Tensor], argmax: bool = False) -> List[Tuple[Tensor, Tensor]]:
         training_set = []
         idx_set = set(range(len(training_samples)))
         with tqdm(total=len(training_samples)) as pbar:
-            for t, B in enumerate(range(len(training_samples), self.batch_size)):
+            for t, B in enumerate(range(0, len(training_samples), self.batch_size)):
                 idxs = np.random.choice(list(idx_set), replace=False,
-                                        size=min(self.batch_size, len(training_samples)))
+                                        size=min(self.batch_size, len(training_samples) - B))
                 idx_set = idx_set - set(idxs)
 
                 x_t = torch.stack([self.queryset[i][0] for i in idxs]).to(self.device)
@@ -91,12 +93,12 @@ class ActiveAdversary(object):
                 if argmax:
                     y_t = y_t.argmax(1)
                 for i in range(x_t.size(0)):
-                    training_set.append((x_t[i], y_t[i]))
+                    training_set.append((x_t[i].cpu(), y_t[i].cpu()))
                 pbar.update(x_t.size(0))
         return training_set
 
     def train(self, training_set: List[Tuple[Tensor, Tensor]]):
-        model_utils.train_model(self.surrogate, training_set, self.path, self.evaluation_set, self.criterion,
+        model_utils.train_model(self.surrogate, training_set, self.path, batch_size=self.batch_size, testset=self.evaluation_set, criterion_train=self.criterion,
                                 checkpoint_suffix='.{}.iter'.format(self.iterations), device=self.device,
                                 optimizer=self.optim, **self.kwargs)
         self.iterations += 1
@@ -127,8 +129,8 @@ def main():
         }
     )
     active_adv = ActiveAdversary(**params)
-    for i in params['iterations']:
-        active_adv.step(params['budget-per-iter'])
+    for i in range(params['iterations']):
+        active_adv.step(params['budget_per_iter'])
     active_adv.save_selected()
 
 

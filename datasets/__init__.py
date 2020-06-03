@@ -35,7 +35,7 @@ dataset_to_modelfamily = {
     'Diabetic5': 'imagenet',
     'ImageNet1k': 'imagenet',
     'GTSRB': 'custom_cnn',
-    'Imagenet64': 'custom_cnn'
+    'ImageNet64': 'custom_cnn'
 }
 
 # Transforms

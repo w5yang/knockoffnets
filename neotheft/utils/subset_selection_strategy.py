@@ -128,7 +128,7 @@ class RandomSelectionStrategy(SubsetSelectionStrategy):
         """
         super(RandomSelectionStrategy, self).__init__(dataset, model, seed, batch_size)
         unselected_list = list(self.unselected)
-        np.random.set_state(self.state[0])
+        np.random.set_state(self.state)
         result_indexes = np.random.choice(unselected_list, initial_size, False)
         self.state = np.random.get_state()
         self.select(result_indexes)
@@ -168,9 +168,9 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         assert metric in ('euclidean', 'manhattan', 'l1', 'l2')
         self.metric = metric
         self.device = device
-        super(KCenterGreedyApproach).__init__(dataset, model, seed, batch_size)
+        super(KCenterGreedyApproach, self).__init__(dataset, model, seed, batch_size)
         unselected_list = list(self.unselected)
-        np.random.set_state(self.state[0])
+        np.random.set_state(self.state)
         initial_selection = np.random.choice(unselected_list, initial_size, False)
         self.select(initial_selection)
         self.state = np.random.get_state()

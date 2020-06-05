@@ -46,7 +46,6 @@ class ActiveAdversary(object):
             os.makedirs(model_dir)
         self.batch_size = batch_size
         self.num_worker = num_workers
-        self.selected_index = set()
         self.selected: List[Tuple[Tensor, Tensor]] = []  # [(img_tensor, output_tensor)]
         assert strategy in ('random', 'kcenter')
         if strategy == 'random':
@@ -105,12 +104,13 @@ class ActiveAdversary(object):
         self.iterations += 1
 
     def save_selected(self):
-        selected_output_path = os.path.join(self.path, 'selection.{}.pickle'.format(len(self.selected_index)))
+        self.sss.merge_selection()
+        selected_output_path = os.path.join(self.path, 'selection.{}.pickle'.format(len(self.sss.selected)))
         if os.path.exists(selected_output_path):
             print("{} exists, override file.".format(selected_output_path))
         with open(selected_output_path, 'wb') as fp:
-            pickle.dump(self.selected, fp)
-        print("=> selected {} samples written to {}".format(len(self.selected_index), selected_output_path))
+            pickle.dump(self.sss.selected, fp)
+        print("=> selected {} samples written to {}".format(len(self.sss.selected), selected_output_path))
 
     def step(self, size: int):
         samples = self.sss.get_subset(size)
@@ -132,6 +132,7 @@ def main():
     )
     active_adv = ActiveAdversary(**params)
     for i in range(params['iterations']):
+        print("{} samples selected.".format(len(active_adv.sss.selected)))
         active_adv.step(params['budget_per_iter'])
     active_adv.save_selected()
 

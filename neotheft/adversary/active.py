@@ -47,6 +47,7 @@ class ActiveAdversary(object):
         self.batch_size = batch_size
         self.num_worker = num_workers
         self.selected: List[Tuple[Tensor, Tensor]] = []  # [(img_tensor, output_tensor)]
+        self.evaluation_set: List[Tuple[Tensor, Tensor]] = []
         assert strategy in ('random', 'kcenter')
         if strategy == 'random':
             self.sss = RandomSelectionStrategy(
@@ -70,16 +71,13 @@ class ActiveAdversary(object):
             raise NotImplementedError
         self.optim = get_optimizer(self.surrogate.parameters(), optimizer_choice, **kwargs)
         self.criterion = model_utils.soft_cross_entropy
-        self.evaluation_set = self.query_dataset([sample[0] for sample in testset], argmax=True)
-
+        self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
         initial_samples = self.sss.get_selecting_tensor()
         self.iterations = 0
-        init_queryset = self.query_dataset(initial_samples)
-        self.train(init_queryset)
-        self.total_train = init_queryset
+        self.query_dataset(initial_samples)
+        self.train()
 
-    def query_dataset(self, training_samples: List[Tensor], argmax: bool = False) -> List[Tuple[Tensor, Tensor]]:
-        training_set = []
+    def query_dataset(self, training_samples: List[Tensor], argmax: bool = False, train: bool = True):
         idx_set = set(range(len(training_samples)))
         with tqdm(total=len(training_samples)) as pbar:
             for t, B in enumerate(range(0, len(training_samples), self.batch_size)):
@@ -92,16 +90,19 @@ class ActiveAdversary(object):
                 if argmax:
                     y_t = y_t.argmax(1)
                 for i in range(x_t.size(0)):
-                    training_set.append((x_t[i].cpu(), y_t[i].cpu()))
+                    if train:
+                        self.selected.append((x_t[i].cpu(), y_t[i].cpu()))
+                    else:
+                        self.evaluation_set.append((x_t[i].cpu(), y_t[i].cpu()))
                 pbar.update(x_t.size(0))
-        return training_set
 
-    def train(self, training_set: List[Tuple[Tensor, Tensor]]):
-        model_utils.train_model(self.surrogate, training_set, self.path, batch_size=self.batch_size,
+
+
+    def train(self):
+        model_utils.train_model(self.surrogate, self.selected, self.path, batch_size=self.batch_size,
                                 testset=self.evaluation_set, criterion_train=self.criterion,
                                 checkpoint_suffix='.{}.iter'.format(self.iterations), device=self.device,
                                 optimizer=self.optim, **self.kwargs)
-        self.iterations += 1
 
     def save_selected(self):
         self.sss.merge_selection()
@@ -114,9 +115,9 @@ class ActiveAdversary(object):
 
     def step(self, size: int):
         samples = self.sss.get_subset(size)
-        sample_ds = self.query_dataset(samples)
-        self.total_train.extend(sample_ds)
-        self.train(self.total_train)
+        self.query_dataset(samples)
+        self.train()
+        self.iterations += 1
 
 
 def main():

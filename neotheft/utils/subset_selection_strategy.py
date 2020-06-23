@@ -136,7 +136,7 @@ class RandomSelectionStrategy(SubsetSelectionStrategy):
         self.select(result_indexes)
         #     return self.get_selecting_tensor()
 
-    def get_subset(self, size: int) -> List[Tensor]:
+    def get_subset(self, size: int) -> set:
         self.merge_selection()
         unselected_list = list(self.unselected)
         np.random.set_state(self.state[0])
@@ -198,7 +198,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
             centers.append(query_result[selecting_i])
             self.select([selecting_i])
 
-        return self.get_selecting_tensor()
+        return self.selecting
 
     def k_center(self, A: Tensor, B: Tensor) -> (Tensor, int):
         A = A.to(self.device)

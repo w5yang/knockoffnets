@@ -114,8 +114,8 @@ class ActiveAdversary(object):
         print("=> selected {} samples written to {}".format(len(self.sss.selected), selected_output_path))
 
     def step(self, size: int):
-        samples = self.sss.get_subset(size)
-        self.query_dataset(samples)
+        samples_indexes = self.sss.get_subset(size)
+        self.query_dataset([self.queryset[i] for i in samples_indexes])
         self.train()
         self.iterations += 1
 

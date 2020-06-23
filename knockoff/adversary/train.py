@@ -76,8 +76,11 @@ def samples_to_transferset(samples, budget=None, transform=None, target_transfor
         return TransferSetImagePaths(samples[:budget], transform=transform, target_transform=target_transform)
     elif isinstance(sample_x, np.ndarray):
         return TransferSetImages(samples[:budget], transform=transform, target_transform=target_transform)
+    elif isinstance(sample_x, torch.Tensor):
+        # this directly comes from transfer results, without further transform.
+        return samples[:budget]
     else:
-        raise ValueError('type(x_i) ({}) not recognized. Supported types = (str, np.ndarray)'.format(type(sample_x)))
+        raise ValueError('type(x_i) ({}) not recognized. Supported types = (str, np.ndarray, torch.Tensor)'.format(type(sample_x)))
 
 
 def get_optimizer(parameters, optimizer_type, lr=0.01, momentum=0.5, **kwargs):

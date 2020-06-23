@@ -33,7 +33,7 @@ class SubsetSelectionStrategy:
         self.selected = set()
         self.unselected = set([i for i in range(self.size)])
         self.selecting = set()
-        self.batch_size = batch_size
+        self.batch_size = batch_size * 4
         self.device = device
 
     def shuffle(self) -> None:
@@ -143,7 +143,7 @@ class RandomSelectionStrategy(SubsetSelectionStrategy):
         result_indexes = np.random.choice(unselected_list, size, False)
         self.state = np.random.get_state()
         self.select(result_indexes)
-        return self.get_selecting_tensor()
+        return self.selecting
 
 
 class KCenterGreedyApproach(SubsetSelectionStrategy):
@@ -177,7 +177,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         self.select(initial_selection)
         self.state = np.random.get_state()
 
-    def get_subset(self, size: int) -> List[Tensor]:
+    def get_subset(self, size: int) -> set:
         self.merge_selection()
         center_indexes, _ = self.get_selected()
         query_result = self.query_all()

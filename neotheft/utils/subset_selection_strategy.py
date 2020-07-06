@@ -208,7 +208,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
             B_sq = torch.sum(torch.pow(B, 2), 1).reshape([1, -1])
             dist = torch.sqrt(torch.max(A_sq - 2 * torch.matmul(A, B.T) + B_sq, torch.tensor(0.0).to(self.device)))
         elif self.metric == 'manhattan' or self.metric == 'l1':
-            raise NotImplementedError
+            dist = torch.sum(torch.abs(A.unsqueeze(1) - B), -1)
         else:
             raise NotImplementedError
         min_dist, _ = torch.min(dist, dim=1)

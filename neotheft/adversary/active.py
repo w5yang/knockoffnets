@@ -13,11 +13,12 @@ from torch.nn import Module
 from torch import Tensor
 import torch
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Set
 import pickle
 from neotheft.utils.subset_selection_strategy import RandomSelectionStrategy, KCenterGreedyApproach
 import knockoff.utils.model as model_utils
 from knockoff.adversary.train import get_optimizer
+from models import zoo
 
 
 class ActiveAdversary(object):
@@ -69,23 +70,19 @@ class ActiveAdversary(object):
             )
         else:
             raise NotImplementedError
+        self.optimizer_choice = optimizer_choice
         self.optim = get_optimizer(self.surrogate.parameters(), optimizer_choice, **kwargs)
+        self.queried: Set[int] = set()
         self.criterion = model_utils.soft_cross_entropy
         self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
-        initial_samples = self.sss.get_selecting_tensor()
         self.iterations = 0
-        self.query_dataset(initial_samples)
+        self.query_index(self.sss.selecting)
         self.train()
 
     def query_dataset(self, training_samples: List[Tensor], argmax: bool = False, train: bool = True):
-        idx_set = set(range(len(training_samples)))
         with tqdm(total=len(training_samples)) as pbar:
             for t, B in enumerate(range(0, len(training_samples), self.batch_size)):
-                idxs = np.random.choice(list(idx_set), replace=False,
-                                        size=min(self.batch_size, len(training_samples) - B))
-                idx_set = idx_set - set(idxs)
-
-                x_t = torch.stack([self.queryset[i][0] for i in idxs]).to(self.device)
+                x_t = torch.stack([training_samples[i] for i in range(B, min(B + self.batch_size, len(training_samples)))]).to(self.device)
                 y_t = self.blackbox(x_t)
                 if argmax:
                     y_t = y_t.argmax(1)
@@ -96,9 +93,21 @@ class ActiveAdversary(object):
                         self.evaluation_set.append((x_t[i].cpu(), y_t[i].cpu()))
                 pbar.update(x_t.size(0))
 
-
+    def query_index(self, index_set: Set[int], argmax: bool = False):
+        if len(index_set.intersection(self.queried)) > 0:
+            raise Exception("Double query.")
+        for index in index_set:
+            x: Tensor = self.queryset[index][0].unsqueeze(0).to(self.device)
+            y = self.blackbox(x)
+            if argmax:
+                y = y.argmax(1)
+            self.selected.append((x.squeeze().cpu(), y.squeeze().cpu()))
+        self.queried.update(index_set)
+        np.random.shuffle(self.selected)
 
     def train(self):
+        # self.surrogate = zoo.get_net(self.kwargs["model_arch"], 'custom_cnn', None, num_classes=43).to(self.device)
+        # self.optim = get_optimizer(self.surrogate.parameters(), self.optimizer_choice, **self.kwargs)
         model_utils.train_model(self.surrogate, self.selected, self.path, batch_size=self.batch_size,
                                 testset=self.evaluation_set, criterion_train=self.criterion,
                                 checkpoint_suffix='.{}.iter'.format(self.iterations), device=self.device,
@@ -106,16 +115,22 @@ class ActiveAdversary(object):
 
     def save_selected(self):
         self.sss.merge_selection()
-        selected_output_path = os.path.join(self.path, 'selection.{}.pickle'.format(len(self.sss.selected)))
-        if os.path.exists(selected_output_path):
-            print("{} exists, override file.".format(selected_output_path))
-        with open(selected_output_path, 'wb') as fp:
+        selected_index_output_path = os.path.join(self.path, 'selection.{}.pickle'.format(len(self.sss.selected)))
+        selected_transfer_outpath = os.path.join(self.path, "transferset.{}.pickle".format(len(self.selected)))
+        if os.path.exists(selected_index_output_path):
+            print("{} exists, override file.".format(selected_index_output_path))
+        with open(selected_index_output_path, 'wb') as fp:
             pickle.dump(self.sss.selected, fp)
-        print("=> selected {} samples written to {}".format(len(self.sss.selected), selected_output_path))
+        print("=> selected {} samples written to {}".format(len(self.sss.selected), selected_index_output_path))
+        if os.path.exists(selected_transfer_outpath):
+            print("{} exists, override file.".format(selected_transfer_outpath))
+        with open(selected_transfer_outpath, 'wb') as fp:
+            pickle.dump(self.selected, fp)
+        print("=> selected {} samples written to {}".format(len(self.selected), selected_transfer_outpath))
 
     def step(self, size: int):
-        samples_indexes = self.sss.get_subset(size)
-        self.query_dataset([self.queryset[i] for i in samples_indexes])
+        self.sss.get_subset(size)
+        self.query_index(self.sss.selecting)
         self.train()
         self.iterations += 1
 

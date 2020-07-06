@@ -177,7 +177,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         self.select(initial_selection)
         self.state = np.random.get_state()
 
-    def get_subset(self, size: int) -> set:
+    def get_subset(self, size: int) -> None:
         self.merge_selection()
         center_indexes, _ = self.get_selected()
         query_result = self.query_all()
@@ -198,7 +198,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
             centers.append(query_result[selecting_i])
             self.select([selecting_i])
 
-        return self.selecting
+        # return self.selecting
 
     def k_center(self, A: Tensor, B: Tensor) -> (Tensor, int):
         A = A.to(self.device)

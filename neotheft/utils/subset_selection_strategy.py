@@ -33,7 +33,7 @@ class SubsetSelectionStrategy:
         self.selected = set()
         self.unselected = set([i for i in range(self.size)])
         self.selecting = set()
-        self.batch_size = batch_size * 4
+        self.batch_size = batch_size
         self.device = device
 
     def shuffle(self) -> None:
@@ -164,13 +164,17 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
 
         :param dataset: target dataset
         :param model: surrogate model
-        :param seed: random seed for permutation
+        :param seed: random seed for permutation.
         :param batch_size: nn batch size
         :param metric: K-Center Approach distance metric. L1, L2 distance implemented.
         """
         assert metric in ('euclidean', 'manhattan', 'l1', 'l2')
         self.metric = metric
         super(KCenterGreedyApproach, self).__init__(dataset, model, seed, batch_size, device)
+        if metric in ('euclidean', 'l2'):
+            self.batch_size *= 4
+        elif metric in ('manhattan', 'l1'):
+            self.batch_size = int(self.batch_size / 8)
         unselected_list = list(self.unselected)
         np.random.set_state(self.state)
         initial_selection = np.random.choice(unselected_list, initial_size, False)

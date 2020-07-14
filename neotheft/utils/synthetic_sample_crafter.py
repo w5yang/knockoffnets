@@ -317,7 +317,7 @@ class IFGSMMod(AdversarialExampleCrafter):
         x_grad = tensor_var.grad  # Add perturbation
         # gradient descent if targeted,
         if self.targeted_attack:
-            x_adv = tensor_var - alpha * x_grad
+            x_adv = tensor_var - alpha * torch.sign(x_grad)
         # gradient ascent if untargeted
         else:
             x_adv = tensor_var + alpha * torch.sign(x_grad)

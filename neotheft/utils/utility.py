@@ -1,11 +1,14 @@
 import argparse
-from typing import Dict, Any
+from typing import Dict, Any, List
 import torch
 import os
+from tqdm import tqdm
 import datasets
 
 from knockoff.victim.blackbox import Blackbox
 from models import zoo
+from torch import Tensor
+from torch import device as Device
 
 
 def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
@@ -106,6 +109,27 @@ def device_dealer(**params) -> torch.device:
         device = torch.device('cpu')
     return device
 
+
+def query(
+        blackbox: Blackbox,
+        training_samples: List[Tensor],
+        budget: int,
+        argmax: bool = False,
+        batch_size: int = 1024,
+        device: Device = Device('cpu')
+) -> List:
+    results = []
+    with tqdm(total=budget) as pbar:
+        for t, B in enumerate(range(0, len(training_samples), batch_size)):
+            x_t = torch.stack([training_samples[i] for i in range(B, min(B + batch_size, budget))]).to(device)
+            y_t = blackbox(x_t)
+            if argmax:
+                y_t = y_t.argmax(1)
+            # unpack
+            for i in range(x_t.size(0)):
+                results.append((x_t[i].cpu(), y_t[i].cpu()))
+            pbar.update(x_t.size(0))
+    return results
 
 if __name__ == '__main__':
     # test

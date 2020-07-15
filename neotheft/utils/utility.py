@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 import torch
 import os
 from tqdm import tqdm
+import pickle
 import datasets
 
 from knockoff.victim.blackbox import Blackbox
@@ -130,6 +131,15 @@ def query(
                 results.append((x_t[i].cpu(), y_t[i].cpu()))
             pbar.update(x_t.size(0))
     return results
+
+
+def load_transferset(path: str) -> (List, int):
+    assert os.path.exists(path)
+    with open(path, 'rb') as rf:
+        samples = pickle.load(rf)
+    num_classes = samples[0][1].size(0)
+    return samples, num_classes
+
 
 if __name__ == '__main__':
     # test

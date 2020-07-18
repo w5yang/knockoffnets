@@ -278,7 +278,7 @@ class IFGSMMod(AdversarialExampleCrafter):
 
         below_var = Variable(tensor - self.eps, requires_grad=False)
         above_var = Variable(tensor + self.eps, requires_grad=False)
-        previous_label = model((x_adv_var.unsqueeze(0)).device()).data.max(1)[1]
+        previous_label = model((x_adv_var.unsqueeze(0)).to(torch.device('cuda'))).data.max(1)[1]
         distant = False
         if previous_label == target:
             distant = True
@@ -310,7 +310,7 @@ class IFGSMMod(AdversarialExampleCrafter):
 
     def _step(self, model: nn.Module, tensor_var: Variable, target_var: Variable, alpha: float, below_var: Variable,
               above_var: Variable) -> torch.Tensor:
-        outputs = model((tensor_var.unsqueeze(0)).device())
+        outputs = model((tensor_var.unsqueeze(0)).to(torch.device('cuda')))
         loss = F.nll_loss(outputs, target_var)
         loss.backward(retain_graph=True)  # obtain gradients on x
 

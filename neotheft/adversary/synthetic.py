@@ -46,7 +46,7 @@ class SyntheticAdversary(object):
         method_list = kwargs['method'].split('-')
         self.direction_num = kwargs['directions']
         self.direction_method = method_list[0]
-        assert self.direction_method in ('topk', 'random')
+        assert self.direction_method in ('topk', 'rand')
         self.params = kwargs
         self.picker = lambda x: eval('self.{}(x, k={}, exclude_max=True)'
                                      .format(self.direction_method, self.direction_num))

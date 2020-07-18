@@ -26,11 +26,11 @@ def deepfool(image: Tensor, net: Module, num_classes: int = 10, overshoot: float
     is_cuda = torch.cuda.is_available()
 
     if is_cuda:
-        print("Using GPU")
+
         image = image.cuda()
         net = net.cuda()
     else:
-        print("Using CPU")
+        pass
 
     f_image = net.forward(Variable(image.unsqueeze(0), requires_grad=True)).data.cpu().numpy().flatten()
     I = (np.array(f_image)).flatten().argsort()[::-1]

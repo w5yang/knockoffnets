@@ -24,7 +24,7 @@ def main():
     rounds = 20
     remnant = set(range(len(transferset)))
     selected = set()
-    evaluation_set = query(blackbox, [data[0] for data in testset], len(testset), device=device)
+    params['testset'] = query(blackbox, [data[0] for data in testset], len(testset), device=device, argmax=True)
     optimizer = get_optimizer(surrogate.parameters(), params['optimizer_choice'], **params)
 
     for i in range(rounds):
@@ -33,8 +33,8 @@ def main():
         current_round = list(remnant)
         print('round {}: {} object to calculate.'.format(i + 1, len(remnant)))
         for index in current_round:
-            permutation, _, _, result = deepfool(transferset[index], surrogate, num_classes)
-            batch_samples.append(result)
+            permutation, _, _, _, result = deepfool(transferset[index][0], surrogate, num_classes)
+            batch_samples.append(result.squeeze(0))
             batch_permutation.append(np.linalg.norm(permutation))
         batch_permutation = np.array(batch_permutation)
         selection = batch_permutation.argsort(0)[:iter_batch]
@@ -43,8 +43,8 @@ def main():
         selected.update(selection)
         remnant.difference_update(selection)
         transferset.extend(query(blackbox, training_batch, iter_batch, device=device))
-        model_utils.train_model(surrogate, transferset, model_dir, params['batch_size'],
-                                criterion_train=model_utils.soft_cross_entropy, testset=evaluation_set,
+        model_utils.train_model(surrogate, transferset, model_dir,
+                                criterion_train=model_utils.soft_cross_entropy,
                                 optimizer=optimizer, **params)
 
 if __name__ == '__main__':

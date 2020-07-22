@@ -39,7 +39,10 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
                             default=10)
     if option['synthetic']:
         parser.add_argument('synthetic_method', metavar='SM', type=str, help='Synthetic Method',
-                            choices=['fgsm', 'ifgsm'])
+                            choices=['fgsm', 'ifgsm', 'mifgsm'])
+        parser.add_argument('eps', metavar='E', type=float, help='Synthetic maximum epsilon')
+        parser.add_argument('targeted_method', metavar='T', type=str, help='Target methods',
+                            choices=['non-targeted', 'targeted-random', 'targeted-topk'])
     if option['black_box']:
         parser.add_argument('victim_model_dir', metavar='VIC_DIR', type=str,
                             help='Path to victim model. Should contain files "model_best.pth.tar" and "params.json"')

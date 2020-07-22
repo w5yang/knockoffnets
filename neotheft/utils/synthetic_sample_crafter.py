@@ -48,12 +48,16 @@ class SyntheticSampleCrafter(object):
 
 
 class AdversarialExampleCrafter(SyntheticSampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda: bool = True):
         super().__init__(eps, min_pixel, max_pixel)
         self.targeted_attack = targeted_attack
+        if is_cuda:
+            self.cuda = lambda x: x.cuda()
+        else:
+            self.cuda = lambda x: x.cpu()
         return
 
-    def __call__(self, model: nn.Module, tensor: torch.Tensor, target: int, targeted_attack: bool, init_alpha=1.,
+    def __call__(self, model: nn.Module, tensor: torch.Tensor, target: int, init_alpha=1.,
                  num_steps=40) -> torch.Tensor:
         raise NotImplementedError
 
@@ -69,8 +73,8 @@ class Unit(SyntheticSampleCrafter):
 
 # Fixed L_inf perturbation around tensor
 class RandomColorPert(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
-        super(RandomColorPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack=True)
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda: bool = True):
+        super(RandomColorPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=1):
         assert tensor.dim() == 4
@@ -88,34 +92,30 @@ class RandomColorPert(AdversarialExampleCrafter):
 
 
 class IncreaseLuminosityPert(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
-        super(IncreaseLuminosityPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack=True)
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
+        super(IncreaseLuminosityPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=1):
-        e = self.eps * torch.sign(torch.rand(tensor.shape))
-        if tensor.is_cuda:
-            e = e.cuda()
-
+        tensor = self.cuda(tensor)
+        e = self.cuda(self.eps * torch.sign(torch.rand(tensor.shape)))
         return torch.clamp(tensor + e, self.min_pixel, self.max_pixel)
-
         # Random L_inf perturbation around tensor
 
 
 class RandPert(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
-        super(RandPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack=True)
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
+        super(RandPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=1):
         e = self.eps * torch.sign(torch.randn(tensor.shape))
-        if tensor.is_cuda:
-            e = e.cuda()
-
+        e = self.cuda(e)
+        tensor = self.cuda(tensor)
         return torch.clamp(tensor + e, self.min_pixel, self.max_pixel)
 
 
 class RandBoundPert(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
-        super(RandBoundPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack=True)
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
+        super(RandBoundPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=1):
         r = self.max_pixel - self.min_pixel
@@ -125,32 +125,32 @@ class RandBoundPert(AdversarialExampleCrafter):
         b += self.min_pixel
         e = self.eps * b
         print(e)
-        if tensor.is_cuda:
-            e = e.cuda()
-
+        tensor = self.cuda(tensor)
+        e = self.cuda(e)
         return torch.clamp(tensor + e, self.min_pixel, self.max_pixel)
 
 
 # Random Gaussian perturbation
 class RandNormPert(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
-        super(RandNormPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack=True)
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
+        super(RandNormPert, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=1):
         e = self.eps * (torch.randn(tensor.shape))
-        if tensor.is_cuda:
-            e = e.cuda()
+        tensor = self.cuda(tensor)
+        e = self.cuda(e)
         return torch.clamp(tensor + e, self.min_pixel, self.max_pixel)
 
 
 class FGSM(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
-        super(FGSM, self).__init__(eps, min_pixel, max_pixel, targeted_attack=targeted_attack)
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
+        super(FGSM, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=1):
+        model = self.cuda(model)
         model.eval()
-        tensor_var = Variable(tensor, requires_grad=True)
-        target_var = Variable(target, requires_grad=False)
+        tensor_var = Variable(self.cuda(tensor), requires_grad=True)
+        target_var = Variable(self.cuda(target), requires_grad=False)
         outputs = model(tensor_var)
         loss = F.nll_loss(outputs, target_var)
 
@@ -165,24 +165,25 @@ class FGSM(AdversarialExampleCrafter):
 
 
 class PGD(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
         self.transform = lambda x: x
-        super(PGD, self).__init__(eps, min_pixel, max_pixel, targeted_attack=targeted_attack)
+        super(PGD, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
     def __call__(self, model, tensor, target, init_alpha=1., num_steps=40):
         for name, param in model.state_dict().items():
             param.require_grads = False
 
+        model = self.cuda(model)
         model.eval()
 
-        x_adv_var = Variable(tensor, requires_grad=True)
-        target_var = Variable(target, requires_grad=False)
+        x_adv_var = Variable(self.cuda(tensor), requires_grad=True)
+        target_var = Variable(self.cuda(target), requires_grad=False)
 
-        below_var = Variable(tensor - self.eps, requires_grad=False)
-        above_var = Variable(tensor + self.eps, requires_grad=False)
+        below_var = Variable(self.cuda(tensor - self.eps), requires_grad=False)
+        above_var = Variable(self.cuda(tensor + self.eps), requires_grad=False)
 
         for i in range(num_steps):
-            x_adv_var = Variable(x_adv_var.data, requires_grad=True)
+            x_adv_var = Variable(self.cuda(x_adv_var.data), requires_grad=True)
             x_adv_var = self._step(model, x_adv_var, target_var, alpha=init_alpha, below_var=below_var,
                                    above_var=above_var)
 
@@ -211,27 +212,28 @@ class PGD(AdversarialExampleCrafter):
 
 
 class IFGSM(AdversarialExampleCrafter):
-    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True):
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True, is_cuda=True):
         self.transform = lambda x: x
-        super(IFGSM, self).__init__(eps, min_pixel, max_pixel, targeted_attack=targeted_attack)
+        super(IFGSM, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
 
-    def __call__(self, model: nn.Module, tensor: torch.Tensor, target: torch.Tensor, targeted_attack: bool,
+    def __call__(self, model: nn.Module, tensor: torch.Tensor, target: torch.Tensor,
                  init_alpha=1.,
                  num_steps=40) -> torch.Tensor:
-        self.targeted_attack = targeted_attack
+        # self.targeted_attack = targeted_attack
         for name, param in model.state_dict().items():
             param.require_grads = False
 
+        model = self.cuda(model)
         model.eval()
 
-        x_adv_var = Variable(tensor, requires_grad=True)
-        target_var = Variable(target, requires_grad=False)
+        x_adv_var = Variable(self.cuda(tensor), requires_grad=True)
+        target_var = Variable(self.cuda(target), requires_grad=False)
 
-        below_var = Variable(tensor - self.eps, requires_grad=False)
-        above_var = Variable(tensor + self.eps, requires_grad=False)
+        below_var = Variable(self.cuda(tensor - self.eps), requires_grad=False)
+        above_var = Variable(self.cuda(tensor + self.eps), requires_grad=False)
 
         for i in range(num_steps):
-            x_adv_var = Variable(x_adv_var.data, requires_grad=True)
+            x_adv_var = Variable(self.cuda(x_adv_var.data), requires_grad=True)
             x_adv_var = self._step(model, x_adv_var, target_var, alpha=init_alpha, below_var=below_var,
                                    above_var=above_var)
 
@@ -278,7 +280,7 @@ class IFGSMMod(AdversarialExampleCrafter):
 
         below_var = Variable(tensor - self.eps, requires_grad=False)
         above_var = Variable(tensor + self.eps, requires_grad=False)
-        previous_label = model((x_adv_var.unsqueeze(0)).to(torch.device('cuda'))).data.max(1)[1]
+        previous_label = model((x_adv_var.unsqueeze(0)).to(torch.device('cuda'))).data.max_pixel(1)[1]
         distant = False
         if previous_label == target:
             distant = True
@@ -328,13 +330,14 @@ class IFGSMMod(AdversarialExampleCrafter):
 
 # Abstract class
 class TransferabilityAttack(object):
-    def __init__(self, model, min, max, x_initial, num_channels, eps=64, is_cuda=False, targeted_attack=True):
+    def __init__(self, model, min_pixel, max_pixel, x_initial, num_channels, eps=64, is_cuda=False,
+                 targeted_attack=True):
         self.model = model
-        self.min = min
-        self.max = max
+        self.min_pixel = min_pixel
+        self.max_pixel = max_pixel
 
         assert eps >= 1
-        eps = eps / 255 * (self.max - self.min)
+        eps = eps / 255 * (self.max_pixel - self.min_pixel)
         self.eps = eps
 
         self.num_channels = num_channels
@@ -353,9 +356,9 @@ class TransferabilityAttack(object):
         x_adv = torch.min(x_adv, above_var)
         if self.num_channels == 3:
             for c in range(3):
-                x_adv[:, c, :, :] = torch.clamp(x_adv[:, c, :, :], self.min[c], self.max[c])
+                x_adv[:, c, :, :] = torch.clamp(x_adv[:, c, :, :], self.min_pixel[c], self.max_pixel[c])
         else:
-            x_adv = torch.clamp(x_adv, self.min, self.max)
+            x_adv = torch.clamp(x_adv, self.min_pixel, self.max_pixel)
         return x_adv
 
     def upper_bound_var(self, tensor):
@@ -368,7 +371,7 @@ class TransferabilityAttack(object):
         assert tensor.dim() == 4
         return (self.lower_bound_var(tensor), self.upper_bound_var(tensor))
 
-    def __call__(self):
+    def __call__(self, model, tensor, target, init_alpha, num_steps=10):
         raise NotImplementedError()
 
     def to_cpu(self, *args):
@@ -384,20 +387,21 @@ class TransferabilityAttack(object):
         return tuple(res)
 
 
-class MIFGSM(TransferabilityAttack):
-    def __init__(self, model, min, max, x_initial, num_channels, eps=64, is_cuda=False, momentum=1.0,
-                 targeted_attack=True):
-        super(MIFGSM, self).__init__(model, min, max, x_initial, num_channels, eps, is_cuda, targeted_attack)
-        self.prev_grad = torch.zeros(x_initial.shape)
-        if self.is_cuda:
-            self.prev_grad = self.prev_grad.cuda()
+class MIFGSM(AdversarialExampleCrafter):
+    def __init__(self, eps=0.2, min_pixel=-1., max_pixel=1., targeted_attack=True,
+                 momentum: float=1., is_cuda=True):
+        super(MIFGSM, self).__init__(eps, min_pixel, max_pixel, targeted_attack, is_cuda)
         self.momentum = momentum
 
-    def __call__(self, tensor, target, init_alpha, num_steps=10):
-        if self.is_cuda:
-            tensor, target = self.to_cuda(tensor, target)
-        else:
-            tensor, target = self.to_cpu(tensor, target)
+    def __call__(self, model, tensor, target, init_alpha, num_steps=10):
+        self.lb, self.ub = Variable(tensor - self.eps, requires_grad=False),\
+                           Variable(tensor + self.eps, requires_grad=False)
+
+        self.prev_grad = torch.zeros_like(tensor)
+
+        if model is not None:
+            self.model = model
+        tensor, target = self.cuda(tensor), self.cuda(target)
 
         for name, param in self.model.state_dict().items():
             param.require_grads = False
@@ -430,9 +434,7 @@ class MIFGSM(TransferabilityAttack):
         else:
             x_adv = tensor_var + alpha * torch.sign(x_grad)
         self.prev_grad = x_grad.data
-
-        self.lb, self.ub = self.calculate_bounds(self.x_initial)
-        x_adv = self.constrain(x_adv, self.lb, self.ub)
+        x_adv = torch.clamp(x_adv, self.lb, self.ub)
 
         return x_adv
 

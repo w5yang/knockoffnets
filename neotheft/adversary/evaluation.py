@@ -69,22 +69,28 @@ def transferability(blackbox: Blackbox,
         adv_output_bb = blackbox(cuda(x_adv))
         _, adv_labels_bb = torch.max(adv_output_bb, 1)
         agreement += torch.sum(labels_bb.cpu() == labels_sur.cpu()).int()
-        transfer += torch.sum(adv_labels_bb.cpu() == targets.cpu()).int() if targeted else torch.sum(adv_labels_bb.cpu() != targets.cpu()).int()
+        transfer += torch.sum(adv_labels_bb.cpu() == targets.cpu()).int() if targeted else torch.sum(
+            adv_labels_bb.cpu() != targets.cpu()).int()
 
     print("Agreement: {}".format(agreement / total))
     print("Transferability: {}".format(transfer / total))
     return transfer / total
 
+
 if __name__ == '__main__':
     # this block of code is only for temporary test.
     from datasets import GTSRB
     from datasets import modelfamily_to_transforms
+
     transform = modelfamily_to_transforms['custom_cnn']['train']
     dataset = GTSRB(False, transform)
     from knockoff.victim.blackbox import Blackbox
     import torch
+
     device = torch.device('cuda')
     blackbox = Blackbox.from_modeldir('results/models/victim/gtsrb', device)
     from models import zoo
-    surrogate = zoo.get_net('CNN32','custom_cnn', 'results/models/adversary/manhattan/checkpoint.28.iter.pth.tar', num_classes=43)
+
+    surrogate = zoo.get_net('CNN32', 'custom_cnn', 'results/models/adversary/manhattan/checkpoint.28.iter.pth.tar',
+                            num_classes=43)
     transfer = transferability(blackbox, surrogate, dataset, targeted=False)

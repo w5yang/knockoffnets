@@ -16,11 +16,11 @@ from datasets.imagenet64 import ImageNet64
 # (b) input transform to apply
 dataset_to_modelfamily = {
     # MNIST
-    'MNIST': 'mnist',
+    'MNIST': 'custom_cnn',
     'KMNIST': 'mnist',
     'EMNIST': 'mnist',
     'EMNISTLetters': 'mnist',
-    'FashionMNIST': 'mnist',
+    'FashionMNIST': 'custom_cnn',
 
     # Cifar
     'CIFAR10': 'cifar',

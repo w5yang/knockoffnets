@@ -6,12 +6,13 @@ __all__ = ['cnn32']
 
 class CNN32(nn.Module):
     """A typical cnn model originated from ActiveThief
+    Channel can be various value.
 
     """
 
-    def __init__(self, num_classes=43, **kwargs):
+    def __init__(self, num_classes=43, channel=3, **kwargs):
         super(CNN32, self).__init__()
-        self.cb1 = make_conv_block(3, 32)
+        self.cb1 = make_conv_block(channel, 32)
         self.cb2 = make_conv_block(32, 64)
         self.cb3 = make_conv_block(64, 128)
         self.fc = nn.Linear(2048, num_classes)

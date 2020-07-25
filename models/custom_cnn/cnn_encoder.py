@@ -10,7 +10,7 @@ class Classifier(nn.Module):
         super(Classifier, self).__init__()
 
         self.channel = channel
-        self.ndf = 128
+        self.ndf = 8
         self.num_classes = num_classes
 
         self.encoder = nn.Sequential(

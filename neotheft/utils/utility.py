@@ -99,8 +99,9 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         num_classes = len(testset.classes)
         pretrained_path = params['pretrained']
         model_arch = params['model_arch']
+        sample = testset[0][0]
 
-        model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes)
+        model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes, channel=sample.shape[0])
         params['surrogate'] = model.to(device)
     return params
 

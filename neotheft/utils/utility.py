@@ -1,5 +1,5 @@
 import argparse
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 import torch
 import os
 from tqdm import tqdm
@@ -29,14 +29,17 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
                             choices=['kcenter', 'random', 'dfal'])
         parser.add_argument('--metric', metavar="M", type=str, help='K-Center method distance metric',
                             choices=['euclidean', 'manhattan', 'l1', 'l2'], default='euclidean')
-        parser.add_argument('sampleset', metavar='DS_NAME', type=str,
-                            help='Name of sample dataset in active learning selecting algorithms')
         parser.add_argument('--initial-size', metavar='N', type=int, help='Active Learning Initial Sample Size',
                             default=100)
         parser.add_argument('--budget-per-iter', metavar='N', type=int, help='budget for every iteration',
                             default=100)
         parser.add_argument('--iterations', metavar='N', type=int, help='iteration times',
                             default=10)
+    if option['sampling']:
+        parser.add_argument('sampleset', metavar='DS_NAME', type=str,
+                            help='Name of sample dataset in active learning selecting algorithms')
+        parser.add_argument('--selected-path', metavar='SE', type=str,
+                            help='remove selected samples from sample set', required=False)
     if option['synthetic']:
         parser.add_argument('synthetic_method', metavar='SM', type=str, help='Synthetic Method',
                             choices=['fgsm', 'ifgsm', 'mifgsm'])
@@ -84,11 +87,21 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         blackbox_dir = params['victim_model_dir']
         params['blackbox'] = Blackbox.from_modeldir(blackbox_dir, device)
     if option['active']:
+        pass
+    if option['sampling']:
         sample_set_name = params['sampleset']
         assert sample_set_name in datasets.__dict__.keys()
         modelfamily = datasets.dataset_to_modelfamily[sample_set_name]
         transform = datasets.modelfamily_to_transforms[modelfamily]['test']
-        params['queryset'] = datasets.__dict__[sample_set_name](train=True, transform=transform)
+        dataset = datasets.__dict__[sample_set_name](train=True, transform=transform)
+        params['queryset'] = dataset
+        params['selected'] = set()
+        if params.__contains__('selected_path'):
+            total = set([i for i in range(len(dataset))])
+            path = params['selected_path']
+            with open(path, 'rb') as fp:
+                selected = pickle.load(fp)
+            params['selected'] = selected
     if option['train']:
         testset_name = params['testdataset']
         assert testset_name in datasets.__dict__.keys()
@@ -143,6 +156,25 @@ def load_transferset(path: str) -> (List, int):
         samples = pickle.load(rf)
     num_classes = samples[0][1].size(0)
     return samples, num_classes
+
+
+def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, path: str) -> None:
+    if os.path.exists(path):
+        assert os.path.isdir(path)
+    else:
+        os.mkdir(path)
+    transfer_path = os.path.join(path, 'transferset.pickle')
+    if os.path.exists(transfer_path):
+        print('Override previous transferset => {}'.format(transfer_path))
+    with open(transfer_path, 'wb') as tfp:
+        pickle.dump(data, tfp)
+    print("=> selected {} samples written to {}".format(len(data), transfer_path))
+    selection_path = os.path.join(path, 'selection.pickle')
+    if os.path.exists(selection_path):
+        print('Override previous selected index => {}'.format(selection_path))
+    with open(selection_path, 'wb') as sfp:
+        pickle.dump(selection, sfp)
+    print("=> selected {} sample indices written to {}".format(len(selection), selection_path))
 
 
 if __name__ == '__main__':

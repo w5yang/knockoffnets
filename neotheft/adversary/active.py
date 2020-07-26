@@ -141,6 +141,7 @@ def main():
         {
             'transfer': False,
             'active': True,
+            'sampling': True,
             'synthetic': False,
             'black_box': True,
             'train': True

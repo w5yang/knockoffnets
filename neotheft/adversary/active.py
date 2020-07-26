@@ -101,7 +101,7 @@ class ActiveAdversary(object):
             y = self.blackbox(x)
             if argmax:
                 y = y.argmax(1)
-            self.selected.append((x.squeeze().cpu(), y.squeeze().cpu()))
+            self.selected.append((x.squeeze(0).cpu(), y.squeeze(0).cpu()))
         self.queried.update(index_set)
         np.random.shuffle(self.selected)
 

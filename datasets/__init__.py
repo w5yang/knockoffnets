@@ -86,10 +86,12 @@ modelfamily_to_transforms = {
         'train': transforms.Compose([
             transforms.Resize((32, 32)),
             transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
         ]),
         'test': transforms.Compose([
             transforms.Resize((32, 32)),
             transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
         ])
     }
 }

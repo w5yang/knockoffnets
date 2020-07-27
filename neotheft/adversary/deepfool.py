@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from tqdm import tqdm
 
 from neotheft.utils.deepfool import deepfool
 from neotheft.utils.utility import parser_dealer, query, load_transferset, save_selection_state
@@ -59,7 +60,7 @@ def deepfool_choose():
         'train': True
     })
     model_dir = params['model_dir']
-    transferset, num_classes = load_transferset(os.path.join(model_dir, 'transferset.pickle'))
+    transferset, num_classes = load_transferset(os.path.join(model_dir, 'transferset.7500.pickle'))
     surrogate = params['surrogate']
     blackbox = params['blackbox']
     device = params['device']
@@ -79,12 +80,13 @@ def deepfool_choose():
     unselected = list(total - selected)
     num_classes = len(testset.classes)
     print('{} object to calculate.'.format(len(unselected)))
-    for index in unselected:
+    for index in tqdm(unselected):
         permutation, _, _, _, result = deepfool(queryset[index][0], surrogate, num_classes)
         batch_samples.append(result.squeeze(0))
         batch_permutation.append(np.linalg.norm(permutation))
     batch_permutation = np.array(batch_permutation)
-    selection = batch_permutation.argsort(0)[:budget] if not reverse else batch_permutation.argsort(0).flip()[:budget]
+    selection = batch_permutation.argsort(0)[:budget] if not reverse else batch_permutation.argsort(0)[len(unselected) - budget:]
+    assert len(selection) == budget
     training_batch = [batch_samples[i] for i in selection]
     selection = [unselected[i] for i in selection]
     selected.update(selection)

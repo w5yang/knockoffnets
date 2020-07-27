@@ -10,7 +10,7 @@ class Inversion(nn.Module):
         super(Inversion, self).__init__()
 
         self.channel = channel
-        self.ngf = 128
+        self.ngf = 8
         self.num_classes = num_classes
         self.truncation = truncation
         self.c = c

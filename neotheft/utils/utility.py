@@ -150,12 +150,22 @@ def query(
     return results
 
 
-def load_transferset(path: str) -> (List, int):
+def load_transferset(path: str, topk: int = 0, argmax: bool = False) -> (List, int):
     assert os.path.exists(path)
     with open(path, 'rb') as rf:
         samples = pickle.load(rf)
+    if argmax:
+        results = [(item[0], int(item[1].argmax())) for item in samples]
+    elif topk != 0:
+        results = []
+        for x, y in samples:
+            values, indices = y.topk(topk)
+            z = torch.zeros_like(y).scatter(0, indices, values)
+            results.append((x, z))
+    else:
+        results = samples
     num_classes = samples[0][1].size(0)
-    return samples, num_classes
+    return results, num_classes
 
 
 def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, path: str) -> None:

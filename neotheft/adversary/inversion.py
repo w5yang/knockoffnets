@@ -119,7 +119,7 @@ def train_inversion(model, trainset, out_path, batch_size=64, criterion_train=No
 
     # Optimizer
     if criterion_train is None:
-        criterion_test = nn.MSELoss(reduction='mean')
+        criterion_train = nn.MSELoss(reduction='mean')
         # criterion_train = nn.CrossEntropyLoss(reduction='mean', weight=weight)
     if criterion_test is None:
         criterion_test = nn.MSELoss(reduction='mean')
@@ -155,7 +155,7 @@ def train_inversion(model, trainset, out_path, batch_size=64, criterion_train=No
 
     model_out_path = osp.join(out_path, 'checkpoint{}.pth.tar'.format(checkpoint_suffix))
     for epoch in range(start_epoch, epochs + 1):
-        scheduler.step(epoch)
+        # scheduler.step(epoch)
         train_loss = train_step(model, train_loader, criterion_train, optimizer, epoch, device,
                                            log_interval=log_interval)
         best_train_loss = min(best_train_loss, train_loss)
@@ -203,8 +203,8 @@ def inversion():
     model_dir = params['model_dir']
     # ignore parameter optimizer_choice
     optim = torch.optim.Adam(inversion.parameters(), lr=0.0002, betas=(0.5, 0.999), amsgrad=True)
-    transferset, num_classes = load_transferset(osp.join(model_dir, 'transferset.pickle'))
-    train_inversion(inversion, transferset, model_dir, optimizer=optim, batch_size=params['batch_size'], testset=testset, device=device, epochs=params['epochs'], checkpoint_suffix='inversion')
+    transferset, num_classes = load_transferset(osp.join(model_dir, 'transferset.pickle'), topk=1)
+    train_inversion(inversion, transferset, model_dir, optimizer=optim, batch_size=params['batch_size'], testset=testset, device=device, epochs=params['epochs'], checkpoint_suffix='.inversion.')
 
 if __name__ == '__main__':
     inversion()

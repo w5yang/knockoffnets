@@ -84,8 +84,11 @@ class ActiveAdversary(object):
             for t, B in enumerate(range(0, len(training_samples), self.batch_size)):
                 x_t = torch.stack([training_samples[i] for i in range(B, min(B + self.batch_size, len(training_samples)))]).to(self.device)
                 y_t = self.blackbox(x_t)
-                if argmax:
+                if self.kwargs['argmaxed'] or argmax:
                     y_t = y_t.argmax(1)
+                elif self.kwargs['topk'] != 0:
+                    v, i = y_t.topk(self.kwargs['topk'], 1)
+                    y_t = torch.zeros_like(y_t).scatter(1, i, v)
                 for i in range(x_t.size(0)):
                     if train:
                         self.selected.append((x_t[i].cpu(), y_t[i].cpu()))
@@ -93,14 +96,17 @@ class ActiveAdversary(object):
                         self.evaluation_set.append((x_t[i].cpu(), y_t[i].cpu()))
                 pbar.update(x_t.size(0))
 
-    def query_index(self, index_set: Set[int], argmax: bool = False):
+    def query_index(self, index_set: Set[int]):
         if len(index_set.intersection(self.queried)) > 0:
             raise Exception("Double query.")
         for index in index_set:
             x: Tensor = self.queryset[index][0].unsqueeze(0).to(self.device)
             y = self.blackbox(x)
-            if argmax:
+            if self.kwargs['argmaxed']:
                 y = y.argmax(1)
+            elif self.kwargs['topk'] != 0:
+                v, i = y.topk(self.kwargs['topk'], 1)
+                y = torch.zeros_like(y).scatter(1, i, v)
             self.selected.append((x.squeeze(0).cpu(), y.squeeze(0).cpu()))
         self.queried.update(index_set)
         np.random.shuffle(self.selected)

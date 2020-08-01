@@ -50,6 +50,8 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         parser.add_argument('victim_model_dir', metavar='VIC_DIR', type=str,
                             help='Path to victim model. Should contain files "model_best.pth.tar" and "params.json"')
         parser.add_argument('--argmaxed', action='store_true', help='Only consider argmax labels', default=False)
+        parser.add_argument('--topk', metavar='TK', type=int, help='iteration times',
+                            default=0)
     if option['train']:
         parser.add_argument('model_dir', metavar='SUR_DIR', type=str, help='Surrogate Model Destination directory')
         parser.add_argument('model_arch', metavar='MODEL_ARCH', type=str, help='Model name')
@@ -96,7 +98,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         dataset = datasets.__dict__[sample_set_name](train=True, transform=transform)
         params['queryset'] = dataset
         params['selected'] = set()
-        if params.__contains__('selected_path'):
+        if params['selected_path'] is not None:
             total = set([i for i in range(len(dataset))])
             path = params['selected_path']
             with open(path, 'rb') as fp:
@@ -134,7 +136,8 @@ def query(
         budget: int,
         argmax: bool = False,
         batch_size: int = 1024,
-        device: Device = Device('cpu')
+        device: Device = Device('cpu'),
+        topk: int = 0,
 ) -> List:
     results = []
     with tqdm(total=budget) as pbar:
@@ -143,6 +146,9 @@ def query(
             y_t = blackbox(x_t)
             if argmax:
                 y_t = y_t.argmax(1)
+            elif topk != 0:
+                v, i = y_t.topk(topk, 1)
+                y_t = torch.zeros_like(y_t).scatter(1, i, v)
             # unpack
             for i in range(x_t.size(0)):
                 results.append((x_t[i].cpu(), y_t[i].cpu()))

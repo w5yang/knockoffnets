@@ -51,12 +51,15 @@ class Blackbox(object):
             params = json.load(jf)
         model_arch = params['model_arch']
         num_classes = params['num_classes']
+        channel = params['channel']
+        complexity = params['complexity']
         victim_dataset = params.get('dataset', 'imagenet')
         modelfamily = datasets.dataset_to_modelfamily[victim_dataset]
 
         # Instantiate the model
         # model = model_utils.get_net(model_arch, n_output_classes=num_classes)
-        model = zoo.get_net(model_arch, modelfamily, pretrained=None, num_classes=num_classes)
+        model = zoo.get_net(model_arch, modelfamily, pretrained=None, num_classes=num_classes,
+                            channel=channel, complexity=complexity)
         model = model.to(device)
 
         # Load weights

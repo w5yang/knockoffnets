@@ -6,11 +6,11 @@ __all__ = ['Classifier']
 
 
 class Classifier(nn.Module):
-    def __init__(self, channel: int = 1, num_classes: int = 10, **kwargs):
+    def __init__(self, channel: int = 1, num_classes: int = 10, complexity: int = 8, **kwargs):
         super(Classifier, self).__init__()
 
         self.channel = channel
-        self.ndf = 8
+        self.ndf = complexity
         self.num_classes = num_classes
 
         self.encoder = nn.Sequential(

@@ -17,9 +17,9 @@ from datasets.imagenet64 import ImageNet64
 dataset_to_modelfamily = {
     # MNIST
     'MNIST': 'custom_cnn',
-    'KMNIST': 'mnist',
-    'EMNIST': 'mnist',
-    'EMNISTLetters': 'mnist',
+    'KMNIST': 'custom_cnn',
+    'EMNIST': 'custom_cnn',
+    'EMNISTLetters': 'custom_cnn',
     'FashionMNIST': 'custom_cnn',
 
     # Cifar
@@ -86,12 +86,21 @@ modelfamily_to_transforms = {
         'train': transforms.Compose([
             transforms.Resize((32, 32)),
             transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
         ]),
         'test': transforms.Compose([
             transforms.Resize((32, 32)),
             transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
         ])
     }
+}
+
+MNIST_transform = {
+    'train': transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))]),
+    'test': transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))]),
 }

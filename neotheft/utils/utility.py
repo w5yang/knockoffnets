@@ -1,6 +1,8 @@
 import argparse
 from typing import Dict, Any, List, Tuple
 import torch
+from torch.nn import Module
+from torch.optim.optimizer import Optimizer
 import os
 from tqdm import tqdm
 import pickle
@@ -11,6 +13,12 @@ from models import zoo
 from torch import Tensor
 from torch import device as Device
 
+import os
+import numpy as np
+import imgaug as ia
+import imgaug.augmenters as iaa
+from PIL import Image
+from torchvision import transforms
 
 def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     parser = argparse.ArgumentParser(description='Train a model')
@@ -192,6 +200,99 @@ def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, pat
         pickle.dump(selection, sfp)
     print("=> selected {} sample indices written to {}".format(len(selection), selection_path))
 
+
+seq = iaa.Sequential([
+    # iaa.Fliplr(0.5), # horizontal flips
+    iaa.Crop(percent=(0, 0.1)),  # random crops
+    # Small gaussian blur with random sigma between 0 and 0.5.
+    # But we only blur about 50% of all images.
+    iaa.Sometimes(
+        0.5,
+        iaa.GaussianBlur(sigma=(0, 0.1))
+    ),
+    # Strengthen or weaken the contrast in each image.
+    iaa.LinearContrast((0.75, 1.5)),
+    # Add gaussian noise.
+    # For 50% of all images, we sample the noise once per pixel.
+    # For the other 50% of all images, we sample the noise per pixel AND
+    # channel. This can change the color (not only brightness) of the
+    # pixels.
+    iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+    # Make some images brighter and some darker.
+    # In 20% of all cases, we sample the multiplier once per channel,
+    # which can end up changing the color of the images.
+    # iaa.Multiply((0.8, 1.2), per_channel=0.2),
+    # Apply affine transformations to each image.
+    # Scale/zoom them, translate/move them, rotate them and shear them.
+    iaa.Affine(
+        scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+        translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+        rotate=(-20, 20),
+        shear=(-8, 8)
+    )
+], random_order=True)  # apply augmenters in random order
+
+
+def save_npimg(array: np.ndarray, path: str) -> None:
+    """ Save numpy array to image file.
+
+    :param array: img array
+    :param path: path including corresponding extension
+    :return: None
+    """
+    img = Image.fromarray(array.squeeze())
+    img.save(path)
+
+
+def augment(img, expand_factor: int) -> np.ndarray:
+    """Expand input image to a quantity of expand_factor
+
+    :param img: numpy.ndarray, already converted to 'uint8' shape=(H, W, C);
+       torch.Tensor, unconverted, may be 'float32' shape=(C, H, W), shape=(B, C, H, W);
+       PIL.Image
+    :param expand_factor: Quantity of generated images.
+    :return: result array, 'uint8' shape=(expand_factor, H, W, C)
+    """
+    if isinstance(img, Tensor):
+        img = tensor_to_np(img)
+    elif isinstance(img, np.ndarray):
+        pass
+    elif isinstance(img, Image.Image):
+        img = np.asarray(img, dtype="uint8")
+    else:
+        raise ValueError
+    img_batch = np.expand_dims(img, 0).repeat(expand_factor, 0)
+    images_aug = seq(images=img_batch)  # (200,28,28,1)
+    # images_aug_trans = np.expand_dims(images_aug,1)
+    print("images_aug: ", images_aug.shape)
+    return images_aug
+
+
+def tensor_to_np(tensor: Tensor) -> np.ndarray:
+    img = tensor.mul(255).byte()
+    img = img.cpu()
+    if len(img.shape) == 4:
+        img.squeeze_(0)
+    elif len(img.shape) == 3:
+        pass
+    else:
+        raise ValueError
+    img = img.numpy().transpose((1, 2, 0))
+    return img
+
+
+def load_img_dir(img_dir: str, transform=None) -> List[torch.tensor]:
+    imgs = []
+    if transform is None:
+        transform = transforms.ToTensor()
+    for file in os.listdir(img_dir):
+        img = Image.open(os.path.join(img_dir, file))
+        imgs.append(img)
+    return [transform(img) for img in imgs]
+
+
+# This function unpack the image tensor out of dataset-like List
+unpack = lambda x: [item[0] for item in x]
 
 if __name__ == '__main__':
     # test

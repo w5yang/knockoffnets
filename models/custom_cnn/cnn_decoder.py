@@ -6,11 +6,19 @@ __all__ = ['Inversion']
 
 
 class Inversion(nn.Module):
-    def __init__(self, channel: int = 1, num_classes: int = 10, truncation: int = 10, c: float = 50., **params):
+    def __init__(
+            self,
+            channel: int = 1,
+            num_classes: int = 10,
+            truncation: int = 10,
+            c: float = 50.,
+            complexity: int = 64,
+            **params
+    ):
         super(Inversion, self).__init__()
 
         self.channel = channel
-        self.ngf = 8
+        self.ngf = complexity
         self.num_classes = num_classes
         self.truncation = truncation
         self.c = c

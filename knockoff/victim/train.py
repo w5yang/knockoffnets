@@ -30,6 +30,7 @@ def main():
     parser.add_argument('dataset', metavar='DS_NAME', type=str, help='Dataset name')
     parser.add_argument('model_arch', metavar='MODEL_ARCH', type=str, help='Model name')
     # Optional arguments
+    parser.add_argument('-x', '--complexity', metavar='X', type=int, help='Complexity of conv layer channel.', default=64)
     parser.add_argument('-o', '--out_path', metavar='PATH', type=str, help='Output path for model',
                         default=cfg.MODEL_DIR)
     parser.add_argument('-d', '--device_id', metavar='D', type=int, help='Device id. -1 for CPU.', default=0)
@@ -76,6 +77,13 @@ def main():
     trainset = dataset(train=True, transform=train_transform)
     testset = dataset(train=False, transform=test_transform)
     num_classes = len(trainset.classes)
+    sample = testset[0][0]
+    if len(sample.shape) <= 2:
+        # 2 dimensional images
+        channel = 1
+    else:
+        channel = sample.shape[0]
+    params['channel'] = channel
     params['num_classes'] = num_classes
 
     if params['train_subset'] is not None:
@@ -87,8 +95,10 @@ def main():
     # ----------- Set up model
     model_name = params['model_arch']
     pretrained = params['pretrained']
+    complexity = params['complexity']
     # model = model_utils.get_net(model_name, n_output_classes=num_classes, pretrained=pretrained)
-    model = zoo.get_net(model_name, modelfamily, pretrained, num_classes=num_classes)
+    model = zoo.get_net(model_name, modelfamily, pretrained, num_classes=num_classes,
+                        channel=channel, complexity=complexity)
     model = model.to(device)
 
     # ----------- Train

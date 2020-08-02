@@ -40,7 +40,7 @@ class Adversary(object):
             self.blackbox = None
         else:
             self.blackbox = Blackbox.from_modeldir(blackbox_path, self.device)
-        modelfamily = datasets.dataset_to_modelfamily['testset']
+        modelfamily = datasets.dataset_to_modelfamily[testset]
         # Work around for MNIST. MNISTlike is one channel image and is normalized with specific parameter.
         if testset in ('MNIST', 'KMNIST', 'EMNIST', 'EMNISTLetters', 'FashionMNIST'):
             self.channel = 1
@@ -51,6 +51,7 @@ class Adversary(object):
         # For absolute accuracy test.
         self.testset = datasets.__dict__[testset](train=False, transform=self.transforms['test'])
         self.argmax = argmax
+        self.batch_size = batch_size
         # For relative accuracy test.
         self.query = lambda data: query(self.blackbox, data, len(data), self.argmax, self.batch_size, self.device,
                                         self.topk)
@@ -58,7 +59,8 @@ class Adversary(object):
                                     self.device)
         self.num_classes = self.testset.num_classes
         self.target_model = get_net(model_arch, modelfamily, pretrained=pretrained,
-                                    channel=self.channel, complexity=complexity, num_classes=self.num_classes)
+                                    channel=self.channel, complexity=complexity,
+                                    num_classes=self.num_classes).to(self.device)
         self.optim = get_optimizer(self.target_model.parameters(), optimizer_choice, **kwargs)
         self.criterion = soft_cross_entropy
         self.batch_size = batch_size
@@ -116,12 +118,12 @@ def main():
     parser.add_argument('-w', '--num_workers', metavar='N', type=int, help='# Worker threads to load data', default=10)
     parser.add_argument('--pretrained', type=str, help='Use pretrained network', default=None)
     parser.add_argument('--weighted-loss', action='store_true', help='Use a weighted loss', default=False)
-    # Attacker's defense
     parser.add_argument('--argmax', action='store_true', help='Only consider argmax labels', default=False)
     parser.add_argument('--optimizer_choice', type=str, help='Optimizer', default='sgdm',
                         choices=('sgd', 'sgdm', 'adam', 'adagrad'))
     parser.add_argument('-x', '--complexity', type=int, default=64, metavar='N',
-                        help="Inversion model conv channel size.")
+                        help="Model conv channel size.")
+    parser.add_argument('--channel', '-c', type=int, help="Model input image channel", default=1)
     parser.add_argument('-k', '--topk', metavar='K', type=int, help='iteration times',
                         default=0)
     args = parser.parse_args()

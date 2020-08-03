@@ -93,7 +93,7 @@ def deepfool_choose():
     transferset.extend(query(blackbox, training_batch, budget, device=device))
     model_utils.train_model(surrogate, transferset, model_dir,
                             criterion_train=model_utils.soft_cross_entropy,
-                            optimizer=optimizer, checkpoint_suffix='deepfool_choiced', **params)
+                            optimizer=optimizer, checkpoint_suffix='deepfool', **params)
     save_selection_state(transferset, selected, model_dir)
 
 def main():

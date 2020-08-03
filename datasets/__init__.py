@@ -23,7 +23,7 @@ dataset_to_modelfamily = {
     'FashionMNIST': 'custom_cnn',
 
     # Cifar
-    'CIFAR10': 'cifar',
+    'CIFAR10': 'custom_cnn',
     'CIFAR100': 'cifar',
     'SVHN': 'cifar',
     'TinyImageNet200': 'cifar',

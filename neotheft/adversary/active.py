@@ -20,7 +20,7 @@ import knockoff.utils.model as model_utils
 from knockoff.adversary.train import get_optimizer
 from models import zoo
 
-
+# todo this class should be rebuild on top of adversary
 class ActiveAdversary(object):
     def __init__(self,
                  blackbox: Blackbox,
@@ -109,20 +109,20 @@ class ActiveAdversary(object):
                 y = torch.zeros_like(y).scatter(1, i, v)
             self.selected.append((x.squeeze(0).cpu(), y.squeeze(0).cpu()))
         self.queried.update(index_set)
-        np.random.shuffle(self.selected)
+        # np.random.shuffle(self.selected)
 
     def train(self):
         # self.surrogate = zoo.get_net(self.kwargs["model_arch"], 'custom_cnn', None, num_classes=43).to(self.device)
         # self.optim = get_optimizer(self.surrogate.parameters(), self.optimizer_choice, **self.kwargs)
         model_utils.train_model(self.surrogate, self.selected, self.path, batch_size=self.batch_size,
                                 testset=self.evaluation_set, criterion_train=self.criterion,
-                                checkpoint_suffix='.{}.iter'.format(self.iterations), device=self.device,
+                                checkpoint_suffix='.active', device=self.device,
                                 optimizer=self.optim, **self.kwargs)
 
     def save_selected(self):
         self.sss.merge_selection()
-        selected_index_output_path = os.path.join(self.path, 'selection.{}.pickle'.format(len(self.sss.selected)))
-        selected_transfer_outpath = os.path.join(self.path, "transferset.{}.pickle".format(len(self.selected)))
+        selected_index_output_path = os.path.join(self.path, 'selection.pickle')
+        selected_transfer_outpath = os.path.join(self.path, "transferset.pickle")
         if os.path.exists(selected_index_output_path):
             print("{} exists, override file.".format(selected_index_output_path))
         with open(selected_index_output_path, 'wb') as fp:

@@ -11,7 +11,7 @@ from knockoff.victim.blackbox import Blackbox
 import datasets
 from models.zoo import get_net
 from knockoff.adversary.train import get_optimizer
-from neotheft.utils.utility import query, unpack, load_img_dir
+from neotheft.utils.utility import query, unpack, load_img_dir, load_state
 from knockoff.utils.model import soft_cross_entropy, train_model
 
 
@@ -21,6 +21,7 @@ class Adversary(object):
                  state_dir: str,
                  testset: str,
                  pretrained: str = None,
+                 sampleset: str = None,
                  blackbox_path: str = None,
                  cuda: bool = True,
                  complexity: int = 64,
@@ -32,6 +33,7 @@ class Adversary(object):
                  **kwargs) -> None:
         self.device = torch.device('cuda') if cuda else torch.device('cpu')
         self.state_dir = state_dir  # Store model checkpoint, selected state in Active thief etc.
+        self.selection, self.transfer = load_state(state_dir)
         if not os.path.exists(state_dir):
             os.makedirs(state_dir)
         self.cuda = cuda
@@ -50,6 +52,10 @@ class Adversary(object):
             self.transforms = datasets.modelfamily_to_transforms[modelfamily]
         # For absolute accuracy test.
         self.testset = datasets.__dict__[testset](train=False, transform=self.transforms['test'])
+        if sampleset is not None:
+            self.sampleset = datasets.__dict__[sampleset](train=True, transform=self.transforms['train'])
+        else:
+            self.sampleset = None
         self.argmax = argmax
         self.batch_size = batch_size
         # For relative accuracy test.
@@ -68,7 +74,7 @@ class Adversary(object):
         self.num_workers = num_workers
         self.kwargs = kwargs
 
-    def train(self, trainset: Union[Dataset, Iterable[Tuple[Tensor, Tensor]], Iterable[Tensor]],
+    def train(self, trainset: Union[Dataset, Iterable[Tuple[Tensor, Tensor]], Iterable[Tensor], Iterable[int]],
               to_query: bool = False):
         if self.blackbox is None and to_query:
             raise Exception("Blackbox didn't exists, couldn't query")
@@ -76,13 +82,23 @@ class Adversary(object):
             if isinstance(trainset[0], Tuple):
                 # This means trainset is either Dataset or Iterable[Tuple[Tensor, Tensor]], which needs to unpack.
                 data = self.query(unpack(trainset))
-            else:
+            elif isinstance(trainset[0], Tensor):
                 # This means trainset has already unpack.
                 data = self.query(trainset)
+            elif isinstance(trainset[0], int):
+                assert self.sampleset is not None
+                duplication = self.selection.intersection(trainset)
+                if len(duplication) > 0:
+                    print('{} samples duplicated.'.format(len(duplication)))
+                difference = set(trainset) - duplication
+                data = self.query([self.sampleset[i][0] for i in difference])
+                self.selection.update(difference)
         else:
             # dataset is baked
             data = trainset
-        train_model(self.target_model, data, self.state_dir, self.batch_size, self.criterion,
+        self.transfer.extend(data)
+
+        train_model(self.target_model, self.transfer, self.state_dir, self.batch_size, self.criterion,
                     testset=self.evaluation_set, device=self.device, num_workers=self.num_workers,
                     optimizer=self.optim, **self.kwargs)
 

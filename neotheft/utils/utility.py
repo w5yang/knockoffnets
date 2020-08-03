@@ -20,6 +20,7 @@ import imgaug.augmenters as iaa
 from PIL import Image
 from torchvision import transforms
 
+
 def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     parser = argparse.ArgumentParser(description='Train a model')
     # Required arguments
@@ -182,23 +183,40 @@ def load_transferset(path: str, topk: int = 0, argmax: bool = False) -> (List, i
     return results, num_classes
 
 
-def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, path: str) -> None:
-    if os.path.exists(path):
-        assert os.path.isdir(path)
+def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, state_dir: str) -> None:
+    if os.path.exists(state_dir):
+        assert os.path.isdir(state_dir)
     else:
-        os.mkdir(path)
-    transfer_path = os.path.join(path, 'transferset.pickle')
+        os.mkdir(state_dir)
+    transfer_path = os.path.join(state_dir, 'transferset.pickle')
     if os.path.exists(transfer_path):
         print('Override previous transferset => {}'.format(transfer_path))
     with open(transfer_path, 'wb') as tfp:
         pickle.dump(data, tfp)
     print("=> selected {} samples written to {}".format(len(data), transfer_path))
-    selection_path = os.path.join(path, 'selection.pickle')
+    selection_path = os.path.join(state_dir, 'selection.pickle')
     if os.path.exists(selection_path):
         print('Override previous selected index => {}'.format(selection_path))
     with open(selection_path, 'wb') as sfp:
         pickle.dump(selection, sfp)
     print("=> selected {} sample indices written to {}".format(len(selection), selection_path))
+
+
+def load_state(state_dir: str, selection_suffix: str = None) -> (set, List):
+    transfer_path = os.path.join(state_dir, 'transferset.{}pickle'.format(selection_suffix))
+    selection_path = os.path.join(state_dir, 'selection.{}pickle'.format(selection_suffix))
+    if not os.path.exists(transfer_path) or not os.path.exists(selection_path):
+        print("State not exists, returning None")
+        return set(), []
+    with open(selection_path, 'rb') as sf:
+        selection = pickle.load(sf)
+        assert isinstance(selection, set)
+        print("=> load selected {} sample indices from {}".format(len(selection), selection_path))
+    with open(transfer_path, 'rb') as tf:
+        transfer = pickle.load(tf)
+        assert isinstance(transfer, List)
+        print("=> load selected {} samples from {}".format(len(transfer), transfer_path))
+    return selection, transfer
 
 
 seq = iaa.Sequential([

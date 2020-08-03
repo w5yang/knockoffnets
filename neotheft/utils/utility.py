@@ -202,7 +202,7 @@ def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, sta
     print("=> selected {} sample indices written to {}".format(len(selection), selection_path))
 
 
-def load_state(state_dir: str, selection_suffix: str = None) -> (set, List):
+def load_state(state_dir: str, selection_suffix: str = '') -> (set, List):
     transfer_path = os.path.join(state_dir, 'transferset.{}pickle'.format(selection_suffix))
     selection_path = os.path.join(state_dir, 'selection.{}pickle'.format(selection_suffix))
     if not os.path.exists(transfer_path) or not os.path.exists(selection_path):

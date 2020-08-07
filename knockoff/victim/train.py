@@ -16,6 +16,7 @@ from torch.utils.data import Subset
 import configs.config as cfg
 import datasets
 import knockoff.utils.model as model_utils
+from knockoff.adversary.train import get_optimizer
 import models.zoo as zoo
 
 __author__ = "Tribhuvanesh Orekondy"
@@ -54,6 +55,8 @@ def main():
     parser.add_argument('--train_subset', type=int, help='Use a subset of train set', default=None)
     parser.add_argument('--pretrained', type=str, help='Use pretrained network', default=None)
     parser.add_argument('--weighted-loss', action='store_true', help='Use a weighted loss', default=None)
+    parser.add_argument('--optimizer-choice', type=str, help='Optimizer', default='sgdm',
+                        choices=('sgd', 'sgdm', 'adam', 'adagrad'))
     args = parser.parse_args()
     params = vars(args)
 
@@ -100,10 +103,11 @@ def main():
     model = zoo.get_net(model_name, modelfamily, pretrained, num_classes=num_classes,
                         channel=channel, complexity=complexity)
     model = model.to(device)
+    optimizer = get_optimizer(model.parameters(), params['optimizer_choice'], **params)
 
     # ----------- Train
     out_path = params['out_path']
-    model_utils.train_model(model, trainset, testset=testset, device=device, **params)
+    model_utils.train_model(model, trainset, testset=testset, device=device, optimizer=optimizer, **params)
 
     # Store arguments
     params['created_on'] = str(datetime.now())

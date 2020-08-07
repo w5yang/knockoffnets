@@ -60,7 +60,7 @@ def deepfool_choose():
         'train': True
     })
     model_dir = params['model_dir']
-    transferset, num_classes = load_transferset(os.path.join(model_dir, 'transferset.7500.pickle'))
+    transferset, num_classes = load_transferset(os.path.join(model_dir, 'transferset.pickle'))
     surrogate = params['surrogate']
     blackbox = params['blackbox']
     device = params['device']

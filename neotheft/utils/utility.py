@@ -68,6 +68,8 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         # Optional arguments
         parser.add_argument('-e', '--epochs', type=int, default=100, metavar='N',
                             help='number of epochs to train (default: 100)')
+        parser.add_argument('-x', '--complexity', type=int, default=64, metavar='N',
+                            help="Model conv channel size.")
         parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                             help='learning rate (default: 0.01)')
         parser.add_argument('--momentum', type=float, default=0.5, metavar='M',
@@ -82,13 +84,13 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
                             help='LR Decay Rate')
         parser.add_argument('--pretrained', type=str, help='Use pretrained network', default=None)
         parser.add_argument('--weighted-loss', action='store_true', help='Use a weighted loss', default=False)
-        parser.add_argument('--optimizer_choice', type=str, help='Optimizer', default='sgdm',
+        parser.add_argument('--optimizer-choice', type=str, help='Optimizer', default='sgdm',
                             choices=('sgd', 'sgdm', 'adam', 'adagrad'))
     # apply to all circumstances
     parser.add_argument('-b', '--batch-size', type=int, default=64, metavar='N',
                         help='input batch size for training (default: 64)')
-    parser.add_argument('-d', '--device_id', metavar='D', type=int, help='Device id. -1 for CPU.', default=0)
-    parser.add_argument('-w', '--num_workers', metavar='N', type=int, help='# Worker threads to load data',
+    parser.add_argument('-d', '--device-id', metavar='D', type=int, help='Device id. -1 for CPU.', default=0)
+    parser.add_argument('-w', '--num-workers', metavar='N', type=int, help='# Worker threads to load data',
                         default=10)
     args = parser.parse_args()
     params = vars(args)
@@ -103,7 +105,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         sample_set_name = params['sampleset']
         assert sample_set_name in datasets.__dict__.keys()
         modelfamily = datasets.dataset_to_modelfamily[sample_set_name]
-        transform = datasets.modelfamily_to_transforms[modelfamily]['test']
+        transform = datasets.modelfamily_to_transforms[modelfamily]['train']
         dataset = datasets.__dict__[sample_set_name](train=True, transform=transform)
         params['queryset'] = dataset
         params['selected'] = set()
@@ -125,7 +127,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         model_arch = params['model_arch']
         sample = testset[0][0]
 
-        model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes, channel=sample.shape[0])
+        model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes, channel=sample.shape[0], complexity=params['complexity'])
         params['surrogate'] = model.to(device)
     return params
 
@@ -188,7 +190,7 @@ def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, sta
         assert os.path.isdir(state_dir)
     else:
         os.mkdir(state_dir)
-    transfer_path = os.path.join(state_dir, 'transferset.pickle')
+    transfer_path = os.path.join(state_dir, 'transferset.7500.pickle')
     if os.path.exists(transfer_path):
         print('Override previous transferset => {}'.format(transfer_path))
     with open(transfer_path, 'wb') as tfp:

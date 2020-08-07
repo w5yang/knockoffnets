@@ -63,7 +63,7 @@ class Adversary(object):
                                         self.topk)
         self.evaluation_set = query(self.blackbox, unpack(self.testset), len(self.testset), True, self.batch_size,
                                     self.device)
-        self.num_classes = self.testset.num_classes
+        self.num_classes = len(self.testset.classes)
         self.target_model = get_net(model_arch, modelfamily, pretrained=pretrained,
                                     channel=self.channel, complexity=complexity,
                                     num_classes=self.num_classes).to(self.device)

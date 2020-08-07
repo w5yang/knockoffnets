@@ -182,5 +182,5 @@ def resnet34(num_classes=1000, channel=3, **kwargs):
     return resnet(depth=32, num_classes=num_classes, channel=channel)
 
 
-def resnet50(num_classes=1000):
-    return resnet(depth=56, num_classes=num_classes)
+def resnet50(num_classes=1000, channel=3, **kwargs):
+    return resnet(depth=56, num_classes=num_classes, channel=channel)

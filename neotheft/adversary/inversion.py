@@ -203,7 +203,7 @@ def inversion():
     model_dir = params['model_dir']
     # ignore parameter optimizer_choice
     optim = torch.optim.Adam(inversion.parameters(), lr=0.0002, betas=(0.5, 0.999), amsgrad=True)
-    transferset, num_classes = load_transferset(osp.join(model_dir, 'transferset.pickle'), topk=1)
+    transferset, num_classes = load_transferset(osp.join(model_dir, 'transferset.pickle'))
     train_inversion(inversion, transferset, model_dir, optimizer=optim, batch_size=params['batch_size'], testset=testset, device=device, epochs=params['epochs'], checkpoint_suffix='.inversion')
 
 if __name__ == '__main__':

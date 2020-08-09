@@ -190,7 +190,7 @@ def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, sta
         assert os.path.isdir(state_dir)
     else:
         os.mkdir(state_dir)
-    transfer_path = os.path.join(state_dir, 'transferset.7500.pickle')
+    transfer_path = os.path.join(state_dir, 'transferset.pickle')
     if os.path.exists(transfer_path):
         print('Override previous transferset => {}'.format(transfer_path))
     with open(transfer_path, 'wb') as tfp:

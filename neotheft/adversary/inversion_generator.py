@@ -72,6 +72,8 @@ def main():
         save_path = args.save_path
     else:
         save_path = os.path.join(os.path.dirname(args.modelpath), 'generated')
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
 
     if args.testset is None:
         get_imgs(model, save_path, args.expansion, args.num_classes)
@@ -87,8 +89,8 @@ def main():
         for inputs, targets in tqdm(dataloader):
             vector = blackbox(inputs)
             imgs = model(vector.to(device)).cpu()
-            for i in imgs.shape[0]:
-                save_image(imgs[0], os.path.join(save_path, "{}.{}.bmp".format(targets[i], total + i)))
+            for i in range(imgs.shape[0]):
+                save_image(imgs[i], os.path.join(save_path, "{}.{}.bmp".format(targets[i], total + i)))
             total += imgs.shape[0]
 
 

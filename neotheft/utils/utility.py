@@ -185,7 +185,7 @@ def load_transferset(path: str, topk: int = 0, argmax: bool = False) -> (List, i
     return results, num_classes
 
 
-def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, state_dir: str) -> None:
+def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: set, list_indices: List, state_dir: str) -> None:
     if os.path.exists(state_dir):
         assert os.path.isdir(state_dir)
     else:
@@ -202,14 +202,21 @@ def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: dict, sta
     with open(selection_path, 'wb') as sfp:
         pickle.dump(selection, sfp)
     print("=> selected {} sample indices written to {}".format(len(selection), selection_path))
+    selected_indices_list_path = os.path.join(state_dir, 'select_indices.pickle')
+    if os.path.exists(selected_indices_list_path):
+        print("{} exists, override file.".format(selected_indices_list_path))
+    with open(selected_indices_list_path, 'wb') as lfp:
+        pickle.dump(list_indices, lfp)
+    print("=> selected {} samples written to {}".format(len(list_indices), selected_indices_list_path))
 
 
-def load_state(state_dir: str, selection_suffix: str = '') -> (set, List):
+def load_state(state_dir: str, selection_suffix: str = '') -> (set, List, List):
     transfer_path = os.path.join(state_dir, 'transferset.{}pickle'.format(selection_suffix))
     selection_path = os.path.join(state_dir, 'selection.{}pickle'.format(selection_suffix))
+    indices_list_path = os.path.join(state_dir, 'select_indices.{}pickle'.format(selection_suffix))
     if not os.path.exists(transfer_path) or not os.path.exists(selection_path):
         print("State not exists, returning None")
-        return set(), []
+        return set(), [], []
     with open(selection_path, 'rb') as sf:
         selection = pickle.load(sf)
         assert isinstance(selection, set)
@@ -218,7 +225,11 @@ def load_state(state_dir: str, selection_suffix: str = '') -> (set, List):
         transfer = pickle.load(tf)
         assert isinstance(transfer, List)
         print("=> load selected {} samples from {}".format(len(transfer), transfer_path))
-    return selection, transfer
+    with open(indices_list_path, 'rb') as lf:
+        indices_list = pickle.load(lf)
+        assert isinstance(indices_list, List)
+        print("=> load selected {} sample indices from {}".format(len(indices_list), indices_list_path))
+    return selection, transfer, indices_list
 
 
 seq = iaa.Sequential([

@@ -6,6 +6,7 @@ from torch.nn import Module
 import numpy as np
 from typing import List, Tuple
 import math
+from tqdm import tqdm
 
 
 class SubsetSelectionStrategy:
@@ -186,7 +187,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         center_indexes, _ = self.get_selected()
         query_result = self.query_all()
         centers = [query_result[i] for i in center_indexes]
-        for _ in range(size):
+        for _ in tqdm(range(size), desc='Selecting'):
             min_distances = []
             min_indexes = []
             unselected_indexes = list(self.unselected)

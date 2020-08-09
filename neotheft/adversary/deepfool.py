@@ -128,7 +128,6 @@ def main():
     parser.add_argument('--argmaxed', action='store_true', help='Only consider argmax labels', default=False)
     parser.add_argument('--topk', metavar='TK', type=int, help='iteration times',
                         default=0)
-    parser.add_argument('--testset', metavar='DSET', type=str, help="If using full vector", default=None)
     parser.add_argument('-e', '--epochs', type=int, default=100, metavar='N',
                         help='number of epochs to train (default: 100)')
     parser.add_argument('-x', '--complexity', type=int, default=64, metavar='N',

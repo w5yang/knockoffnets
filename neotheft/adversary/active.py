@@ -77,6 +77,7 @@ class ActiveAdversary(object):
         self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
         self.iterations = 0
         self.query_index(self.sss.selecting)
+        self.list_indices = list(self.sss.selecting)
         self.train()
 
     def query_dataset(self, training_samples: List[Tensor], argmax: bool = False, train: bool = True):
@@ -122,12 +123,18 @@ class ActiveAdversary(object):
     def save_selected(self):
         self.sss.merge_selection()
         selected_index_output_path = os.path.join(self.path, 'selection.pickle')
+        selected_indices_list_path = os.path.join(self.path, 'select_indices.pickle')
         selected_transfer_outpath = os.path.join(self.path, "transferset.pickle")
         if os.path.exists(selected_index_output_path):
             print("{} exists, override file.".format(selected_index_output_path))
         with open(selected_index_output_path, 'wb') as fp:
             pickle.dump(self.sss.selected, fp)
         print("=> selected {} samples written to {}".format(len(self.sss.selected), selected_index_output_path))
+        if os.path.exists(selected_indices_list_path):
+            print("{} exists, override file.".format(selected_indices_list_path))
+        with open(selected_indices_list_path, 'wb') as fp:
+            pickle.dump(self.list_indices, fp)
+        print("=> selected {} samples written to {}".format(len(self.list_indices), selected_indices_list_path))
         if os.path.exists(selected_transfer_outpath):
             print("{} exists, override file.".format(selected_transfer_outpath))
         with open(selected_transfer_outpath, 'wb') as fp:
@@ -136,6 +143,7 @@ class ActiveAdversary(object):
 
     def step(self, size: int):
         self.sss.get_subset(size)
+        self.list_indices.extend(self.sss.selecting)
         self.query_index(self.sss.selecting)
         self.train()
         self.iterations += 1

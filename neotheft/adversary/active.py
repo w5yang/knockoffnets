@@ -116,7 +116,7 @@ class ActiveAdversary(object):
         # self.optim = get_optimizer(self.surrogate.parameters(), self.optimizer_choice, **self.kwargs)
         model_utils.train_model(self.surrogate, self.selected, self.path, batch_size=self.batch_size,
                                 testset=self.evaluation_set, criterion_train=self.criterion,
-                                checkpoint_suffix='.active', device=self.device,
+                                checkpoint_suffix='.active.{}'.format(len(self.selected)), device=self.device,
                                 optimizer=self.optim, **self.kwargs)
 
     def save_selected(self):

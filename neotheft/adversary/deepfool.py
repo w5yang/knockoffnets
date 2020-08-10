@@ -96,7 +96,7 @@ def deepfool_choose(target_model: Module, blackbox: Blackbox, queryset, testset,
     model_utils.train_model(surrogate, transferset, model_dir, testset=evalutation_set,
                             criterion_train=model_utils.soft_cross_entropy,
                             optimizer=optimizer, checkpoint_suffix='.deepfool.{}'.format(len(transferset)), **params)
-    save_selection_state(transferset, selection, indices_list, model_dir, suffix='.deepfool', budget=len(transferset))
+    save_selection_state(transferset, selection, indices_list, model_dir)
 
 
 class DeepfoolMappable(object):

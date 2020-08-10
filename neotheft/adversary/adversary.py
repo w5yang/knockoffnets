@@ -33,7 +33,7 @@ class Adversary(object):
                  **kwargs) -> None:
         self.device = torch.device('cuda') if cuda else torch.device('cpu')
         self.state_dir = state_dir  # Store model checkpoint, selected state in Active thief etc.
-        self.selection, self.transfer = load_state(state_dir)
+        self.selection, self.transfer, self.indices_list = load_state(state_dir)
         if not os.path.exists(state_dir):
             os.makedirs(state_dir)
         self.cuda = cuda

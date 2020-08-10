@@ -66,7 +66,6 @@ def deepfool_choose(target_model: Module, blackbox: Blackbox, queryset, testset,
     surrogate = target_model
     evalutation_set = query(blackbox, [data[0] for data in testset], len(testset), device=device, argmax=True)
     optimizer = get_optimizer(surrogate.parameters(), params['optimizer_choice'], **params)
-    # todo: make deepfool judge budget criteria direction part of parameter.
     reverse = True
     budget = params['deepfool_budget']
     # batch_samples = []
@@ -87,7 +86,7 @@ def deepfool_choose(target_model: Module, blackbox: Blackbox, queryset, testset,
     current_selection = batch_permutation.argsort(0)[:budget] if not reverse else batch_permutation.argsort(0)[
                                                                           len(unselected) - budget:]
     assert len(current_selection) == budget
-    training_batch = [queryset[i][0] for i in current_selection]
+    training_batch = [queryset[unselected[i]][0] for i in current_selection]
     current_selection = [unselected[i] for i in current_selection]
     indices_list.extend(current_selection)
     selection.update(current_selection)

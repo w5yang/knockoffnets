@@ -77,26 +77,26 @@ def deepfool_choose(target_model: Module, blackbox: Blackbox, queryset, testset,
     num_classes = len(testset.classes)
     print('{} object to calculate.'.format(len(unselected)))
     dm = DeepfoolMappable(surrogate, num_classes, queryset)
-    with multiprocessing.Pool(4) as pool:
-        results = pool.map(dm, unselected)
-    batch_permutation = np.array([item[1] for item in results])
-    # for index in tqdm(unselected):
-    #     permutation, _, _, _, result = deepfool(queryset[index][0], surrogate, num_classes)
-    #     batch_samples.append(result.squeeze(0))
-    #     batch_permutation.append(np.linalg.norm(permutation))
+    # with multiprocessing.Pool(4) as pool:
+    #     results = pool.map(dm, unselected)
+    # batch_permutation = np.array([item[1] for item in results])
+    for index in tqdm(unselected):
+        permutation, _, _, _, _ = deepfool(queryset[index][0], surrogate, num_classes)
+        # batch_samples.append(result.squeeze(0))
+        batch_permutation.append(np.linalg.norm(permutation))
     batch_permutation = np.array(batch_permutation)
     current_selection = batch_permutation.argsort(0)[:budget] if not reverse else batch_permutation.argsort(0)[
                                                                           len(unselected) - budget:]
     assert len(current_selection) == budget
-    training_batch = [results[i][0] for i in current_selection]
+    training_batch = [queryset[i][0] for i in current_selection]
     current_selection = [unselected[i] for i in current_selection]
     indices_list.extend(current_selection)
     selection.update(current_selection)
     transferset.extend(query(blackbox, training_batch, budget, device=device))
     model_utils.train_model(surrogate, transferset, model_dir, testset=evalutation_set,
                             criterion_train=model_utils.soft_cross_entropy,
-                            optimizer=optimizer, checkpoint_suffix='deepfool', **params)
-    save_selection_state(transferset, selection, indices_list, model_dir)
+                            optimizer=optimizer, checkpoint_suffix='.deepfool.{}'.format(len(transferset)), **params)
+    save_selection_state(transferset, selection, indices_list, model_dir, suffix='.deepfool', budget=len(transferset))
 
 
 class DeepfoolMappable(object):

@@ -185,24 +185,31 @@ def load_transferset(path: str, topk: int = 0, argmax: bool = False) -> (List, i
     return results, num_classes
 
 
-def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: set, list_indices: List, state_dir: str) -> None:
+def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: set, list_indices: List, state_dir: str, suffix: str = "", budget: int = -1) -> None:
     if os.path.exists(state_dir):
         assert os.path.isdir(state_dir)
     else:
         os.mkdir(state_dir)
-    transfer_path = os.path.join(state_dir, 'transferset.pickle')
+    if budget > 0:
+        transfer_path = os.path.join(state_dir, 'transferset{}.{}.pickle'.format(suffix, budget))
+        selection_path = os.path.join(state_dir, 'selection{}.{}.pickle'.format(suffix, budget))
+        selected_indices_list_path = os.path.join(state_dir, 'select_indices{}.{}.pickle'.format(suffix, budget))
+    else:
+        transfer_path = os.path.join(state_dir, 'transferset{}.pickle'.format(suffix))
+        selection_path = os.path.join(state_dir, 'selection{}.pickle'.format(suffix))
+        selected_indices_list_path = os.path.join(state_dir, 'select_indices{}.pickle'.format(suffix))
     if os.path.exists(transfer_path):
         print('Override previous transferset => {}'.format(transfer_path))
     with open(transfer_path, 'wb') as tfp:
         pickle.dump(data, tfp)
     print("=> selected {} samples written to {}".format(len(data), transfer_path))
-    selection_path = os.path.join(state_dir, 'selection.pickle')
+
     if os.path.exists(selection_path):
         print('Override previous selected index => {}'.format(selection_path))
     with open(selection_path, 'wb') as sfp:
         pickle.dump(selection, sfp)
     print("=> selected {} sample indices written to {}".format(len(selection), selection_path))
-    selected_indices_list_path = os.path.join(state_dir, 'select_indices.pickle')
+
     if os.path.exists(selected_indices_list_path):
         print("{} exists, override file.".format(selected_indices_list_path))
     with open(selected_indices_list_path, 'wb') as lfp:

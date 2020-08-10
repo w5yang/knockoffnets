@@ -5,7 +5,6 @@ from torch.nn import Module
 from tqdm import tqdm
 import argparse
 from typing import List
-import multiprocessing
 
 import datasets
 from knockoff.victim.blackbox import Blackbox

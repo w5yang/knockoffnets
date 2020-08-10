@@ -165,6 +165,8 @@ def main():
     if args.state_budget > 0:
         selection, transfer, indices_list = load_state(state_dir=args.model_dir)
         selection = set(indices_list[:args.state_budget])
+        transfer = transfer[:args.state_budget]
+        indices_list = indices_list[:args.state_budget]
     else:
         selection, transfer, indices_list = set(), [], []
     testset_name = args.testdataset

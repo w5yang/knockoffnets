@@ -61,7 +61,9 @@ def deepfool_active():
 
 
 def deepfool_choose(target_model: Module, blackbox: Blackbox, queryset, testset, selection: set, transferset: List, indices_list: List, device, **params):
-    model_dir = params['model_dir']
+    model_dir = os.path.join(params['model_dir'], 'deepfool.{}'.format(params['deepfool_budget']))
+    if not os.path.exists(model_dir):
+        os.mkdir(model_dir)
     # transferset, num_classes = load_transferset(os.path.join(model_dir, 'transferset.pickle'))
     surrogate = target_model
     evalutation_set = query(blackbox, [data[0] for data in testset], len(testset), device=device, argmax=True)

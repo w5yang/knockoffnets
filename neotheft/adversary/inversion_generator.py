@@ -86,12 +86,19 @@ def main():
         results = []
         dataloader = DataLoader(testset, 128, False)
         total = 0
+        img_vectors = []
         for inputs, targets in tqdm(dataloader):
             vector = blackbox(inputs)
             imgs = model(vector.to(device)).cpu()
+            img_vectors.append(imgs)
             for i in range(imgs.shape[0]):
-                save_image(imgs[i], os.path.join(save_path, "{}.{}.bmp".format(targets[i], total + i)))
+                img_vectors.append(imgs[i])
+                # save_image(imgs[i], os.path.join(save_path, "{}.{}.bmp".format(targets[i], total + i)))
             total += imgs.shape[0]
+        np.random.shuffle(img_vectors)
+        for i in range(args.expansion):
+            save_image(img_vectors[i], os.path.join(save_path, "{}.bmp".format(total + i)))
+
 
 
 if __name__ == '__main__':

@@ -47,8 +47,9 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     if option['sampling']:
         parser.add_argument('sampleset', metavar='DS_NAME', type=str,
                             help='Name of sample dataset in active learning selecting algorithms')
-        parser.add_argument('--selected-path', metavar='SE', type=str,
-                            help='remove selected samples from sample set', required=False)
+        parser.add_argument('--load-state', type=bool, action='store_true', default=False, help='Turn on if load state.')
+        parser.add_argument('--state-suffix', metavar='SE', type=str,
+                            help='load selected samples from sample set', required=False, default='')
     if option['synthetic']:
         parser.add_argument('synthetic_method', metavar='SM', type=str, help='Synthetic Method',
                             choices=['fgsm', 'ifgsm', 'mifgsm'])
@@ -109,12 +110,10 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         dataset = datasets.__dict__[sample_set_name](train=True, transform=transform)
         params['queryset'] = dataset
         params['selected'] = set()
-        if params['selected_path'] is not None:
+        if params['load_state']:
             total = set([i for i in range(len(dataset))])
-            path = params['selected_path']
-            with open(path, 'rb') as fp:
-                selected = pickle.load(fp)
-            params['selected'] = selected
+            path = params['model_dir']
+            params['selection'], params['transferset'], params['selected_indices'] = load_state(path, params['state_suffix'])
     if option['train']:
         testset_name = params['testdataset']
         assert testset_name in datasets.__dict__.keys()

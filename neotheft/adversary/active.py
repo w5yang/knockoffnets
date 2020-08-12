@@ -47,38 +47,69 @@ class ActiveAdversary(object):
             os.makedirs(model_dir)
         self.batch_size = batch_size
         self.num_worker = num_workers
-        self.selected: List[Tuple[Tensor, Tensor]] = []  # [(img_tensor, output_tensor)]
+
         self.evaluation_set: List[Tuple[Tensor, Tensor]] = []
         assert strategy in ('random', 'kcenter')
-        if strategy == 'random':
-            self.sss = RandomSelectionStrategy(
-                dataset=self.queryset,
-                model=self.surrogate,
-                initial_size=initial_size,
-                seed=cfg.DEFAULT_SEED,
-                batch_size=self.batch_size
-            )
-        elif strategy == 'kcenter':
-            self.sss = KCenterGreedyApproach(
-                dataset=self.queryset,
-                model=self.surrogate,
-                initial_size=initial_size,
-                seed=cfg.DEFAULT_SEED,
-                batch_size=self.batch_size,
-                metric=metric,
-                device=device
-            )
-        else:
-            raise NotImplementedError
+
         self.optimizer_choice = optimizer_choice
         self.optim = get_optimizer(self.surrogate.parameters(), optimizer_choice, **kwargs)
-        self.queried: Set[int] = set()
+
         self.criterion = model_utils.soft_cross_entropy
         self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
         self.iterations = 0
-        self.query_index(self.sss.selecting)
-        self.list_indices = list(self.sss.selecting)
-        self.train()
+        if kwargs.get('transferset'):
+            self.selected = kwargs['transferset']
+            self.queried = kwargs['selection']
+            self.list_indices = kwargs['selected_indices']
+            if strategy == 'random':
+                self.sss = RandomSelectionStrategy(
+                    dataset=self.queryset,
+                    model=self.surrogate,
+                    initial_size=initial_size,
+                    seed=cfg.DEFAULT_SEED,
+                    batch_size=self.batch_size
+                )
+            elif strategy == 'kcenter':
+                self.sss = KCenterGreedyApproach(
+                    dataset=self.queryset,
+                    model=self.surrogate,
+                    initial_size=initial_size,
+                    seed=cfg.DEFAULT_SEED,
+                    batch_size=self.batch_size,
+                    metric=metric,
+                    device=device,
+                    initial_selection=self.list_indices
+                )
+            else:
+                raise NotImplementedError
+            print('selection: {}.'.format(len(self.sss.selected)))
+
+        else:
+            if strategy == 'random':
+                self.sss = RandomSelectionStrategy(
+                    dataset=self.queryset,
+                    model=self.surrogate,
+                    initial_size=initial_size,
+                    seed=cfg.DEFAULT_SEED,
+                    batch_size=self.batch_size
+                )
+            elif strategy == 'kcenter':
+                self.sss = KCenterGreedyApproach(
+                    dataset=self.queryset,
+                    model=self.surrogate,
+                    initial_size=initial_size,
+                    seed=cfg.DEFAULT_SEED,
+                    batch_size=self.batch_size,
+                    metric=metric,
+                    device=device
+                )
+            else:
+                raise NotImplementedError
+            self.selected: List[Tuple[Tensor, Tensor]] = []  # [(img_tensor, output_tensor)]
+            self.queried: Set[int] = set()
+            self.query_index(self.sss.selecting)
+            self.list_indices = list(self.sss.selecting)
+            self.train()
 
     def query_dataset(self, training_samples: List[Tensor], argmax: bool = False, train: bool = True):
         with tqdm(total=len(training_samples)) as pbar:

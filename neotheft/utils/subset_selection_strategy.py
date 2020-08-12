@@ -159,6 +159,7 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
                  batch_size: int = 50,
                  metric: str = 'euclidean',
                  device: torch.device = torch.device('cpu'),
+                 initial_selection: List = None,
                  **kwargs
                  ):
         """ K Center Greedy Approach initialization
@@ -177,10 +178,14 @@ class KCenterGreedyApproach(SubsetSelectionStrategy):
         elif metric in ('manhattan', 'l1'):
             self.batch_size = int(self.batch_size / 8)
         unselected_list = list(self.unselected)
-        np.random.set_state(self.state)
-        initial_selection = np.random.choice(unselected_list, initial_size, False)
-        self.select(initial_selection)
-        self.state = np.random.get_state()
+        if initial_selection is None:
+            np.random.set_state(self.state)
+            initial_selection = np.random.choice(unselected_list, initial_size, False)
+            self.select(initial_selection)
+            self.state = np.random.get_state()
+        else:
+            self.selected.update(initial_selection)
+            self.unselected.difference_update(initial_selection)
 
     def get_subset(self, size: int) -> None:
         self.merge_selection()

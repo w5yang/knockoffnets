@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from neotheft.utils.utility import parser_dealer
+from neotheft.utils.utility import parser_dealer, PseudoBlackbox
 from tqdm import tqdm
 
 import configs.config as cfg
@@ -23,7 +23,7 @@ from models import zoo
 # todo this class should be rebuild on top of adversary
 class ActiveAdversary(object):
     def __init__(self,
-                 blackbox: Blackbox,
+                 blackbox,
                  surrogate: Module,
                  queryset: Dataset,
                  testset: Dataset,
@@ -55,7 +55,10 @@ class ActiveAdversary(object):
         self.optim = get_optimizer(self.surrogate.parameters(), optimizer_choice, **kwargs)
 
         self.criterion = model_utils.soft_cross_entropy
-        self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
+        if isinstance(self.blackbox, Blackbox):
+            self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
+        elif isinstance(self.blackbox, PseudoBlackbox):
+            self.evaluation_set = [(sample[0], result) for sample, result in zip(testset, self.blackbox.eval_results)]
         self.iterations = 0
         if kwargs.get('transferset'):
             self.selected = kwargs['transferset']
@@ -131,17 +134,21 @@ class ActiveAdversary(object):
     def query_index(self, index_set: Set[int]):
         if len(index_set.intersection(self.queried)) > 0:
             raise Exception("Double query.")
-        for index in index_set:
-            x: Tensor = self.queryset[index][0].unsqueeze(0).to(self.device)
-            y = self.blackbox(x)
-            if self.kwargs['argmaxed']:
-                y = y.argmax(1)
-            elif self.kwargs['topk'] != 0:
-                v, i = y.topk(self.kwargs['topk'], 1)
-                y = torch.zeros_like(y).scatter(1, i, v)
-            self.selected.append((x.squeeze(0).cpu(), y.squeeze(0).cpu()))
-        self.queried.update(index_set)
-        # np.random.shuffle(self.selected)
+        if isinstance(self.blackbox, Blackbox):
+            for index in index_set:
+                x: Tensor = self.queryset[index][0].unsqueeze(0).to(self.device)
+                y = self.blackbox(x)
+                if self.kwargs['argmaxed']:
+                    y = y.argmax(1)
+                elif self.kwargs['topk'] != 0:
+                    v, i = y.topk(self.kwargs['topk'], 1)
+                    y = torch.zeros_like(y).scatter(1, i, v)
+                self.selected.append((x.squeeze(0).cpu(), y.squeeze(0).cpu()))
+            self.queried.update(index_set)
+        else:
+            for index in index_set:
+                self.selected.append((self.queryset[index], self.blackbox(index)))
+            self.queried.update(index_set)
 
     def train(self):
         # self.surrogate = zoo.get_net(self.kwargs["model_arch"], 'custom_cnn', None, num_classes=43).to(self.device)

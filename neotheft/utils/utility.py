@@ -47,7 +47,8 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     if option['sampling']:
         parser.add_argument('sampleset', metavar='DS_NAME', type=str,
                             help='Name of sample dataset in active learning selecting algorithms')
-        parser.add_argument('--load-state', type=bool, action='store_true', default=False, help='Turn on if load state.')
+        parser.add_argument('--load-state', type=bool, action='store_true', default=False,
+                            help='Turn on if load state.')
         parser.add_argument('--state-suffix', metavar='SE', type=str,
                             help='load selected samples from sample set', required=False, default='')
     if option['synthetic']:
@@ -60,6 +61,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         parser.add_argument('victim_model_dir', metavar='VIC_DIR', type=str,
                             help='Path to victim model. Should contain files "model_best.pth.tar" and "params.json"')
         parser.add_argument('--argmaxed', action='store_true', help='Only consider argmax labels', default=False)
+        parser.add_argument('--pseudoblackbox', action='store_true', help='Load prequeried labels as blackbox', default=False)
         parser.add_argument('--topk', metavar='TK', type=int, help='iteration times',
                             default=0)
     if option['train']:
@@ -99,7 +101,10 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     params['device'] = device
     if option['black_box']:
         blackbox_dir = params['victim_model_dir']
-        params['blackbox'] = Blackbox.from_modeldir(blackbox_dir, device)
+        if params['pseudoblackbox']:
+            params['blackbox'] = PseudoBlackbox(blackbox_dir)
+        else:
+            params['blackbox'] = Blackbox.from_modeldir(blackbox_dir, device)
     if option['active']:
         pass
     if option['sampling']:
@@ -113,7 +118,8 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         if params['load_state']:
             total = set([i for i in range(len(dataset))])
             path = params['model_dir']
-            params['selection'], params['transferset'], params['selected_indices'] = load_state(path, params['state_suffix'])
+            params['selection'], params['transferset'], params['selected_indices'] = load_state(path,
+                                                                                                params['state_suffix'])
     if option['train']:
         testset_name = params['testdataset']
         assert testset_name in datasets.__dict__.keys()
@@ -126,7 +132,8 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         model_arch = params['model_arch']
         sample = testset[0][0]
 
-        model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes, channel=sample.shape[0], complexity=params['complexity'])
+        model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes, channel=sample.shape[0],
+                            complexity=params['complexity'])
         params['surrogate'] = model.to(device)
     return params
 
@@ -184,7 +191,8 @@ def load_transferset(path: str, topk: int = 0, argmax: bool = False) -> (List, i
     return results, num_classes
 
 
-def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: set, list_indices: List, state_dir: str, suffix: str = "", budget: int = -1) -> None:
+def save_selection_state(data: List[Tuple[Tensor, Tensor]], selection: set, list_indices: List, state_dir: str,
+                         suffix: str = "", budget: int = -1) -> None:
     if os.path.exists(state_dir):
         assert os.path.isdir(state_dir)
     else:
@@ -330,6 +338,21 @@ def load_img_dir(img_dir: str, transform=None) -> List[torch.tensor]:
 
 # This function unpack the image tensor out of dataset-like List
 unpack = lambda x: [item[0] for item in x]
+
+
+class PseudoBlackbox(object):
+    def __init__(self, label_path: str):
+        with open(os.path.join(label_path, 'train.pickle'), 'rb') as f:
+            self.train_results = pickle.load(f)
+        with open(os.path.join(label_path, 'eval.pickle'), 'rb') as f:
+            self.eval_results = pickle.load(f)
+
+    def __call__(self, index: int, train: bool = True):
+        if train:
+            return self.train_results[index]
+        else:
+            return self.eval_results[index]
+
 
 if __name__ == '__main__':
     # test

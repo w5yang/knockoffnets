@@ -58,7 +58,8 @@ class ActiveAdversary(object):
         if isinstance(self.blackbox, Blackbox):
             self.query_dataset([sample[0] for sample in testset], argmax=True, train=False)
         elif isinstance(self.blackbox, PseudoBlackbox):
-            self.evaluation_set = [(sample[0], result) for sample, result in zip(testset, self.blackbox.eval_results)]
+            # self.evaluation_set = [(sample[0], result) for sample, result in zip(testset, self.blackbox.eval_results)]
+            self.evaluation_set = testset
         self.iterations = 0
         if kwargs.get('transferset'):
             self.selected = kwargs['transferset']
@@ -147,7 +148,7 @@ class ActiveAdversary(object):
             self.queried.update(index_set)
         else:
             for index in index_set:
-                self.selected.append((self.queryset[index], self.blackbox(index)))
+                self.selected.append((self.queryset[index][0], self.blackbox(index)))
             self.queried.update(index_set)
 
     def train(self):
@@ -203,7 +204,7 @@ def main():
     for i in range(params['iterations']):
         print("{} samples selected.".format(len(active_adv.sss.selected)))
         active_adv.step(params['budget_per_iter'])
-    active_adv.save_selected()
+        active_adv.save_selected()
 
 
 if __name__ == '__main__':

@@ -47,8 +47,7 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
     if option['sampling']:
         parser.add_argument('sampleset', metavar='DS_NAME', type=str,
                             help='Name of sample dataset in active learning selecting algorithms')
-        parser.add_argument('--load-state', type=bool, action='store_true', default=False,
-                            help='Turn on if load state.')
+        parser.add_argument('--load-state', action='store_true', default=False, help='Turn on if load state.')
         parser.add_argument('--state-suffix', metavar='SE', type=str,
                             help='load selected samples from sample set', required=False, default='')
     if option['synthetic']:
@@ -127,9 +126,13 @@ def parser_dealer(option: Dict[str, bool]) -> Dict[str, Any]:
         transform = datasets.modelfamily_to_transforms[modelfamily]['test']
         testset = datasets.__dict__[testset_name](train=False, transform=transform)
         params['testset'] = testset
-        num_classes = len(testset.classes)
+
         pretrained_path = params['pretrained']
         model_arch = params['model_arch']
+        if params['pseudoblackbox']:
+            num_classes = params['blackbox'].train_results[0].shape[0]
+        else:
+            num_classes = len(testset.classes)
         sample = testset[0][0]
 
         model = zoo.get_net(model_arch, modelfamily, pretrained_path, num_classes=num_classes, channel=sample.shape[0],
@@ -345,7 +348,8 @@ class PseudoBlackbox(object):
         with open(os.path.join(label_path, 'train.pickle'), 'rb') as f:
             self.train_results = pickle.load(f)
         with open(os.path.join(label_path, 'eval.pickle'), 'rb') as f:
-            self.eval_results = pickle.load(f)
+            eval_results = pickle.load(f)
+        self.eval_results = [r.argmax() for r in eval_results]
 
     def __call__(self, index: int, train: bool = True):
         if train:
